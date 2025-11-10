@@ -3,6 +3,12 @@
 expenses_credentials.json
 .env
 
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
 # Distribution / packaging
 .Python
 data/**/*.csv
