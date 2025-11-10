@@ -1,6 +1,7 @@
 
 # Secrets/Credential
 expenses_credentials.json
+.env
 
 # Distribution / packaging
 .Python

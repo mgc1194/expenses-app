@@ -69,7 +69,7 @@ cd expenses-app
 
 2. Install required dependencies:
 ```bash
-pip install pandas gspread google-auth
+pip install -r requirements.txt
 ```
 
 3. Set up Google Sheets API credentials:
@@ -81,19 +81,34 @@ pip install pandas gspread google-auth
 
 ## Configuration
 
+The app can be configured in three ways (in order of priority):
+
+1. **Command-line arguments** (highest priority)
+2. **Environment variables** 
+3. **Default values in config.py** (lowest priority)
+
+### Environment Variables (Optional)
+
+Copy `.env.example` to `.env` and customize:
+
+```bash
+cp .env.example .env
+# Edit .env with your preferred settings
+export $(cat .env | xargs)  # Load environment variables
+```
+
+Available environment variables:
+- `EXPENSES_DATA_DIR`: Directory containing input CSV files (default: `./data`)
+- `EXPENSES_OUTPUT_DIR`: Directory for output CSV files (default: `./output`)
+- `EXPENSES_CREDENTIALS_FILE`: Path to credentials file (default: `expenses_credentials.json`)
+- `EXPENSES_YEAR`: Year to process (default: `2025`)
+- `EXPENSES_SPREADSHEET_NAME`: Google Spreadsheet name (default: `Copy of Expenses 2025`)
+
 ### Google Sheets Setup
 
 1. Create a Google Sheet for your expenses (e.g., "Copy of Expenses 2025")
 2. Create worksheets named after months (January, February, etc.)
 3. Share the sheet with your service account email (found in `expenses_credentials.json`)
-
-### Modify Script Settings
-
-Edit `main.py` to configure:
-- `source_path`: Directory containing input CSV files (default: `./data`)
-- `output_path`: Directory for exported CSV files (default: `./output`)
-- `current_year`: Year to process (default: `2025`)
-- Spreadsheet name in the `export_to_gsheet()` call (line 201)
 
 ## Usage
 
@@ -123,18 +138,48 @@ Place CSV files from your banks in the `./data` directory. The app recognizes fi
 
 ### Step 2: Run the Application
 
+#### Basic Usage (with defaults):
+
 ```bash
 python main.py
 ```
 
+This will use default settings from `config.py` and environment variables.
+
+#### Advanced Usage with Command-Line Options:
+
+```bash
+# Process transactions for a specific year
+python main.py --year 2024
+
+# Use a custom data directory
+python main.py --data-dir /path/to/csv/files
+
+# Export only to CSV (skip Google Sheets)
+python main.py --no-gsheet
+
+# Use a custom Google Spreadsheet name
+python main.py --spreadsheet "My Budget 2025"
+
+# Use custom credentials file
+python main.py --credentials /path/to/my-credentials.json
+
+# Combine multiple options
+python main.py --year 2024 --data-dir ~/Downloads/bank-statements --no-gsheet --verbose
+
+# View all available options
+python main.py --help
+```
+
+
 The application will:
-1. Read all CSV files from the `./data` directory
+1. Read all CSV files from the configured data directory (default: `./data`)
 2. Process and standardize transactions from each bank
 3. Remove duplicate transactions
 4. Filter transactions by month and year
 5. Export data to:
    - CSV files in `./output/YYYY/transactions_YYYY_MM.csv`
-   - Google Sheets worksheets (one per month)
+   - Google Sheets worksheets (one per month) - unless `--no-gsheet` is used
 
 ## Output Format
 

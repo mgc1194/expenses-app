@@ -3,6 +3,7 @@ import os
 import pandas as pd
 import logging
 import gspread
+import argparse
 from google.oauth2.service_account import Credentials
 from handlers.capital_one_handler import process as co_handler
 from handlers.sofi_handler import process as sofi_handler
@@ -10,24 +11,34 @@ from handlers.amex_handler import process as amex_handler
 from handlers.chase_handler import process as chase_handler
 from handlers.wells_fargo_handler import process as wf_handler
 from handlers.discover_handler import process as discover_handler
+import config
 
 # Setup logging
-logging.basicConfig(level=logging.INFO)
-
-# Authenticate with Google Sheets API
-SCOPES = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-creds = Credentials.from_service_account_file("expenses_credentials.json", scopes=SCOPES)
-client = gspread.authorize(creds)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 def read_files(data_dir):
+    """
+    Read and process all CSV files from the specified directory.
+    
+    Args:
+        data_dir (str): Directory path containing CSV files
+        
+    Returns:
+        pd.DataFrame: Concatenated DataFrame of all processed transactions
+    """
     all_transactions = []
-    co_files = {'360Checking', '360PerformanceSavings', 'transaction_download'}
-    sofi_files = {'SOFI-Checking', 'SOFI-Savings'}
-    wf_files = {'WF-Checking', 'WF-Savings'}
-    amex_files = {'activity'}
-    chase_files = {'Chase'}
-    discover_files = {'Discover'}
+    co_files = set(config.BANK_FILE_PATTERNS['capital_one'])
+    sofi_files = set(config.BANK_FILE_PATTERNS['sofi'])
+    wf_files = set(config.BANK_FILE_PATTERNS['wells_fargo'])
+    amex_files = set(config.BANK_FILE_PATTERNS['amex'])
+    chase_files = set(config.BANK_FILE_PATTERNS['chase'])
+    discover_files = set(config.BANK_FILE_PATTERNS['discover'])
+    
+    if not os.path.exists(data_dir):
+        logging.error(f'Data directory not found: {data_dir}')
+        return pd.DataFrame()
+    
     for file in os.listdir(data_dir):
         file_path = os.path.join(data_dir, file)
         if file.lower().endswith('.csv'):
@@ -74,12 +85,23 @@ def read_files(data_dir):
 
     if not all_transactions:
         logging.warning('No valid transactions found')
-        return
+        return pd.DataFrame()
 
     return pd.concat(all_transactions).drop_duplicates()
 
 
 def filter_transactions_by_date(transactions_df, target_month=None, target_year=None):
+    """
+    Filter transactions by month and/or year.
+    
+    Args:
+        transactions_df (pd.DataFrame): DataFrame with transactions
+        target_month (int, optional): Month number (1-12)
+        target_year (int, optional): Year number
+        
+    Returns:
+        pd.DataFrame: Filtered DataFrame
+    """
     # Ensure 'Date' column is in datetime format
     transactions_df['Date'] = pd.to_datetime(transactions_df['Date'], errors='coerce')
 
@@ -114,6 +136,15 @@ def export_monthly_csv(df, output_dir, target_month=None, target_year=None):
 
 
 def export_to_csv(df, output_dir, target_month=None, target_year=None):
+    """
+    Export transactions to CSV file.
+    
+    Args:
+        df (pd.DataFrame): DataFrame with transactions
+        output_dir (str): Output directory path
+        target_month (int, optional): Month number
+        target_year (int, optional): Year number
+    """
     # Create directory for the year if it doesn't exist
     if target_year:
         year_dir = os.path.join(output_dir, str(target_year))
@@ -139,20 +170,48 @@ def export_to_csv(df, output_dir, target_month=None, target_year=None):
     logging.info(f'Successfully saved data to {file_path}')
 
 
-def get_gspread_client(credentials_file='expenses_credentials.json'):
-    """Authenticate and return a gspread client with proper scopes."""
-    scopes = [
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive"  # Add Drive scope
-    ]
-    creds = Credentials.from_service_account_file(credentials_file, scopes=scopes)
+def get_gspread_client(credentials_file=None):
+    """
+    Authenticate and return a gspread client with proper scopes.
+    
+    Args:
+        credentials_file (str, optional): Path to credentials JSON file
+        
+    Returns:
+        gspread.Client: Authenticated gspread client
+        
+    Raises:
+        FileNotFoundError: If credentials file doesn't exist
+    """
+    if credentials_file is None:
+        credentials_file = config.CREDENTIALS_FILE
+    
+    if not os.path.exists(credentials_file):
+        raise FileNotFoundError(f"Credentials file not found: {credentials_file}")
+    
+    creds = Credentials.from_service_account_file(credentials_file, scopes=config.GSHEETS_SCOPES)
     return gspread.authorize(creds)
 
 
-def export_to_gsheet(df, spreadsheet_name, worksheet_name, credentials_file='expenses_credentials.json'):
-    """Exports DataFrame to a Google Sheets worksheet, appending data starting at row 4, column A."""
+def export_to_gsheet(df, spreadsheet_name, worksheet_name, credentials_file=None):
+    """
+    Exports DataFrame to a Google Sheets worksheet, appending data starting at row 4, column A.
+    
+    Args:
+        df (pd.DataFrame): DataFrame with transactions
+        spreadsheet_name (str): Name of the Google Spreadsheet
+        worksheet_name (str): Name of the worksheet
+        credentials_file (str, optional): Path to credentials JSON file
+    """
     # Authenticate with Google Sheets
-    client = get_gspread_client()
+    try:
+        client = get_gspread_client(credentials_file)
+    except FileNotFoundError as e:
+        logging.error(f"Google Sheets authentication failed: {e}")
+        return
+    except Exception as e:
+        logging.error(f"Failed to authenticate with Google Sheets: {e}")
+        return
 
     # Open the Google Sheet
     try:
@@ -183,12 +242,94 @@ def export_to_gsheet(df, spreadsheet_name, worksheet_name, credentials_file='exp
     logging.info(f"Successfully exported {len(df)} transactions to '{worksheet_name}' in '{spreadsheet_name}'.")
 
 
+def parse_arguments():
+    """
+    Parse command-line arguments for the application.
+    
+    Returns:
+        argparse.Namespace: Parsed arguments
+    """
+    parser = argparse.ArgumentParser(
+        description='Process and consolidate financial transaction data from multiple banks.',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Process transactions for 2025
+  python main.py --year 2025
+  
+  # Use custom data directory
+  python main.py --data-dir /path/to/csv/files
+  
+  # Export only to CSV (skip Google Sheets)
+  python main.py --no-gsheet
+  
+  # Use custom spreadsheet name
+  python main.py --spreadsheet "My Expenses 2025"
+        """
+    )
+    
+    parser.add_argument(
+        '--data-dir',
+        default=config.DATA_DIR,
+        help=f'Directory containing input CSV files (default: {config.DATA_DIR})'
+    )
+    
+    parser.add_argument(
+        '--output-dir',
+        default=config.OUTPUT_DIR,
+        help=f'Directory for output CSV files (default: {config.OUTPUT_DIR})'
+    )
+    
+    parser.add_argument(
+        '--year',
+        type=int,
+        default=config.CURRENT_YEAR,
+        help=f'Year to process transactions for (default: {config.CURRENT_YEAR})'
+    )
+    
+    parser.add_argument(
+        '--credentials',
+        default=config.CREDENTIALS_FILE,
+        help=f'Path to Google Sheets credentials file (default: {config.CREDENTIALS_FILE})'
+    )
+    
+    parser.add_argument(
+        '--spreadsheet',
+        default=config.SPREADSHEET_NAME,
+        help=f'Google Spreadsheet name (default: {config.SPREADSHEET_NAME})'
+    )
+    
+    parser.add_argument(
+        '--no-gsheet',
+        action='store_true',
+        help='Skip exporting to Google Sheets (only export to CSV)'
+    )
+    
+    parser.add_argument(
+        '--verbose', '-v',
+        action='store_true',
+        help='Enable verbose logging'
+    )
+    
+    return parser.parse_args()
+
+
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    source_path = "./data"
-    output_path = "./output"
-    current_year = 2025
+    args = parse_arguments()
+    
+    # Update logging level if verbose
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+    
+    source_path = args.data_dir
+    output_path = args.output_dir
+    current_year = args.year
 
+    logging.info(f'Starting expense processing for year {current_year}')
+    logging.info(f'Data directory: {source_path}')
+    logging.info(f'Output directory: {output_path}')
+    
     all_data = read_files(source_path)
 
     if not all_data.empty:
@@ -197,8 +338,13 @@ if __name__ == '__main__':
             filtered_data = filter_transactions_by_date(all_data, target_month=month, target_year=current_year)
             logging.info(f'Total transactions for {calendar.month_name[month]} {current_year}: {len(filtered_data)}')
             export_to_csv(filtered_data, output_path, target_month=month, target_year=current_year)
-            logging.info(f'Total transactions for {month_name} {current_year}: {len(filtered_data)}')
-            export_to_gsheet(filtered_data, 'Copy of Expenses 2025', month_name)
+            
+            # Only export to Google Sheets if not disabled
+            if not args.no_gsheet:
+                logging.info(f'Exporting {month_name} {current_year} to Google Sheets')
+                export_to_gsheet(filtered_data, args.spreadsheet, month_name, args.credentials)
+        
+        logging.info('Processing complete!')
     else:
         logging.warning('No data to filter or export')
 
