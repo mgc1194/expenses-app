@@ -8,7 +8,7 @@ from google.oauth2.service_account import Credentials
 from handlers.accounts import ACCOUNT_HANDLERS
 
 # Setup logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, force=True)
 
 # Authenticate with Google Sheets API
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
@@ -16,17 +16,18 @@ creds = Credentials.from_service_account_file("expenses_credentials.json", scope
 client = gspread.authorize(creds)
 
 FILE_ACCOUNT_MAP = {
-    '360Checking':           'CO Checking',
+    '360Checking': 'CO Checking',
     '360PerformanceSavings': 'CO Savings',
-    'transaction_download':  'Quicksilver',
-    'SOFI-Checking':         'SoFi Checking',
-    'SOFI-Savings':          'SoFi Savings',
-    'WF-Checking':           'WF Checking',
-    'WF-Savings':            'WF Savings',
-    'activity':              'Delta Amex',
-    'Chase':                 'Chase',
-    'Discover':              'Discover',
+    'transaction_download': 'Quicksilver',
+    'SOFI-Checking': 'SoFi Checking',
+    'SOFI-Savings': 'SoFi Savings',
+    'WF-Checking': 'WF Checking',
+    'WF-Savings': 'WF Savings',
+    'activity': 'Delta',
+    'Chase': 'Chase',
+    'Discover': 'Discover',
 }
+
 
 def read_files(data_dir):
     all_transactions = []
@@ -44,13 +45,13 @@ def read_files(data_dir):
             continue
 
         handler = ACCOUNT_HANDLERS[account_key]
-        result = handler.process(file_path)
-        if result is not None:
-            all_transactions.append(result)
+        file_data = handler.process(file_path)
+        if file_data is not None:
+            all_transactions.append(file_data)
 
     if not all_transactions:
         logging.warning('No valid transactions found')
-        return
+        return None
 
     return pd.concat(all_transactions).drop_duplicates()
 

@@ -66,6 +66,7 @@ class CapitalOneQuicksilverHandler(BaseHandler):
 
     @staticmethod
     def _apply_amount_logic(df):
+        df = df.fillna(0)
         df['Amount'] = df['Credit'] - df['Debit']
         return df
 
@@ -73,7 +74,7 @@ class CapitalOneQuicksilverHandler(BaseHandler):
 # ── Amex ──────────────────────────────────────────────────────────────────────
 
 class AmexHandler(BaseHandler):
-    account = 'Delta Amex'
+    account = 'Delta'
     date_format = '%m/%d/%Y'
     col_date = 'Date'
     col_concept = 'Description'
@@ -134,7 +135,7 @@ ACCOUNT_HANDLERS = {
     'CO Checking': CapitalOneCheckingHandler(),
     'CO Savings': CapitalOneSavingsHandler(),
     'Quicksilver': CapitalOneQuicksilverHandler(),
-    'Delta Amex': AmexHandler(),
+    'Delta': AmexHandler(),
     'Chase': ChaseHandler(),
     'Discover': DiscoverHandler(),
     'WF Checking': WellsFargoCheckingHandler(),
