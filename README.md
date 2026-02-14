@@ -259,12 +259,12 @@ Errors are logged but don't stop the processing of other files.
 2. Create a new handler class that inherits from `BaseHandler`:
 
        class NewBankHandler(BaseHandler):
-           account = 'New Bank Name'           # Display name
-           date_format = '%Y-%m-%d'            # Date format in CSV
-           col_date = 'Date'                   # Date column name
-           col_concept = 'Description'         # Description column name
-           col_amount = 'Amount'               # Amount column name
-           negate_amount = False               # Set True for credit cards
+           account = 'New Bank Name'       # Display name
+           date_format = '%Y-%m-%d'        # Date format in CSV
+           col_date = 'Date'               # Date column name
+           col_concept = 'Description'     # Description column name
+           col_amount = 'Amount'           # Amount column name
+           negate_amount = False           # Set True for credit cards
 
 3. Add the handler to `ACCOUNT_HANDLERS` registry at the bottom of `accounts.py`
 4. Update `FILE_ACCOUNT_MAP` in `main.py` to map filename patterns to the account key
