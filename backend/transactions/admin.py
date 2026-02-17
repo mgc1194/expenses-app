@@ -19,9 +19,9 @@ class AccountTypeAdmin(admin.ModelAdmin):
 @admin.register(Account)
 class AccountAdmin(admin.ModelAdmin):
     list_display = ('name', 'account_type', 'household', 'created_at')
-    list_filter = ('bank', 'household')
+    list_filter = ('account_type__bank', 'household')
     search_fields = ('name',)
-    raw_id_fields = ('bank', 'household')
+    raw_id_fields = ('account_type', 'household')
 
 
 @admin.register(Transaction)
