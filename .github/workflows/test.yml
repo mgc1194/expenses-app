@@ -38,14 +38,14 @@ jobs:
         run: pytest tests/unit/ -v
 
       - name: Run Django model tests
-          env:
-            DJANGO_SETTINGS_MODULE: config.settings
-            DJANGO_SECRET_KEY: test-secret-key-for-ci
-            DJANGO_DEBUG: False
-            DB_HOST: 127.0.0.1
-            DB_PORT: 3306
-            DB_NAME: test_budget
-            DB_USER: root
-            DB_PASSWORD: root
-          working-directory: backend
-          run: pytest -v
+        working-directory: backend
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings
+          DJANGO_SECRET_KEY: test-secret-key-for-ci
+          DJANGO_DEBUG: False
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_NAME: test_budget
+          DB_USER: root
+          DB_PASSWORD: root
+        run: pytest -v
