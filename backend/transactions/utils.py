@@ -57,30 +57,45 @@ def upsert_transactions(df: pd.DataFrame, account: Account) -> dict:
     Returns:
         dict with keys: inserted, skipped, total.
     """
-    inserted = 0
-    skipped  = 0
+    if df.empty:
+        return {'inserted': 0, 'skipped': 0, 'total': 0}
 
-    for _, row in df.iterrows():
-        _, created = Transaction.objects.get_or_create(
-            id=row['ID'],
-            defaults={
-                'date':              row['Date'].date() if hasattr(row['Date'], 'date') else row['Date'],
-                'concept':           row['Concept'],
-                'amount':            row['Amount'],
-                'label':             None,
-                'category':          None,
-                'additional_labels': None,
-                'account':           account,
-            }
-        )
-        if created:
-            inserted += 1
-        else:
-            skipped += 1
+    # Extract all IDs from the DataFrame
+    incoming_ids = df['ID'].tolist()
+
+    # Fetch existing transaction IDs in one query
+    existing_ids = set(
+        Transaction.objects.filter(id__in=incoming_ids).values_list('id', flat=True)
+    )
+
+    # Build list of new transactions to insert
+    new_transactions = []
+    for row in df.itertuples(index=False):
+        if row.ID not in existing_ids:
+            new_transactions.append(
+                Transaction(
+                    id=row.ID,
+                    date=row.Date.date() if hasattr(row.Date, 'date') else row.Date,
+                    concept=row.Concept,
+                    amount=row.Amount,
+                    label=None,
+                    category=None,
+                    additional_labels=None,
+                    account=account,
+                )
+            )
+
+    # Bulk insert new transactions
+    if new_transactions:
+        Transaction.objects.bulk_create(new_transactions, ignore_conflicts=True)
+
+    inserted = len(new_transactions)
+    skipped = len(df) - inserted
+    total = len(df)
 
     logger.info(
         f"Upsert complete for account '{account.name}' — "
-        f"inserted: {inserted}, skipped: {skipped}, total: {inserted + skipped}"
+        f"inserted: {inserted}, skipped: {skipped}, total: {total}"
     )
 
-    return {'inserted': inserted, 'skipped': skipped, 'total': inserted + skipped}
+    return {'inserted': inserted, 'skipped': skipped, 'total': total}

@@ -171,7 +171,6 @@ class TestImportTransactions:
             f'/transactions/import?account_id={account.id}',
             FILES={'file': csv_file}
         )
-        print(response.json())
 
         assert response.status_code == 200
         data = response.json()

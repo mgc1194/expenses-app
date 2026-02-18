@@ -16,7 +16,7 @@ from django.shortcuts import get_object_or_404
 from ninja import NinjaAPI, File, Schema
 from ninja.files import UploadedFile
 
-from .models import Account, AccountType, Bank
+from .models import Account, Bank
 from .utils import detect_account_type, upsert_transactions
 from transactions.handlers.accounts import ACCOUNT_HANDLERS
 
@@ -106,7 +106,7 @@ def import_transactions(
         return FileImportResult(filename=file.name, **counts)
 
     except Exception as e:
-        logger.error(f'Error importing {file.name}: {e}')
+        logger.exception(f'Error importing {file.name}: {e}')
         return FileImportResult(
             filename=file.name,
             inserted=0,
