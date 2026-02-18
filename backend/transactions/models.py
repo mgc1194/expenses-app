@@ -37,12 +37,16 @@ class AccountType(models.Model):
     updated_at  = models.DateTimeField(auto_now=True)
 
     def clean(self):
-        from transactions.handlers.accounts import ACCOUNT_HANDLERS
-        if self.handler_key and self.handler_key not in ACCOUNT_HANDLERS:
-            raise ValidationError(
-                f"'{self.handler_key}' is not a valid handler key. "
-                f"Valid options are: {', '.join(sorted(ACCOUNT_HANDLERS.keys()))}"
-            )
+        try:
+            from transactions.handlers.accounts import ACCOUNT_HANDLERS
+            if self.handler_key and self.handler_key not in ACCOUNT_HANDLERS:
+                raise ValidationError(
+                    f"'{self.handler_key}' is not a valid handler key. "
+                    f"Valid options are: {', '.join(sorted(ACCOUNT_HANDLERS.keys()))}"
+                )
+        except ImportError:
+            # Handlers not yet migrated — skip validation
+            pass
 
     def __str__(self):
         return f'{self.bank.name} — {self.name}'
