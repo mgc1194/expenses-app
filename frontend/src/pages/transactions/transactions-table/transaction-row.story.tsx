@@ -5,7 +5,7 @@ import type { Decorator, Meta, StoryObj } from '@storybook/react';
 
 import { DEFAULT_COLUMN_ORDER } from '@pages/transactions/transactions-table/columns';
 import { TransactionRow } from '@pages/transactions/transactions-table/transaction-row';
-import type { Label, Transaction } from '@serve/types/global';
+import { makeLabel, makeTransaction } from '@tests/factories';
 
 const tableDecorator: Decorator = Story => (
   <Table size="small">
@@ -15,29 +15,11 @@ const tableDecorator: Decorator = Story => (
   </Table>
 );
 
-const LABELS: Label[] = [
-  { id: 1, name: 'Groceries', color: '#16a34a', category: 'Food', household_id: 1 },
-  { id: 2, name: 'Subscriptions', color: '#7c3aed', category: 'Entertainment', household_id: 1 },
-  { id: 3, name: 'Transport', color: '#2563eb', category: '', household_id: 1 },
+const LABELS = [
+  makeLabel({ id: 1, name: 'Groceries', color: '#16a34a', category: 'Food' }),
+  makeLabel({ id: 2, name: 'Subscriptions', color: '#7c3aed', category: 'Entertainment' }),
+  makeLabel({ id: 3, name: 'Transport', color: '#2563eb', category: '' }),
 ];
-
-const TX: Transaction = {
-  id: 1,
-  date: '2026-03-10',
-  concept: 'TRADER JOES #123',
-  amount: -42.57,
-  label_id: null,
-  label_name: null,
-  label_color: null,
-  category: null,
-  additional_labels: null,
-  exclude_from_summary: false,
-  source: 'csv',
-  account_id: 1,
-  account_name: "Alice's 360 Savings",
-  bank_name: 'Capital One',
-  imported_at: '2026-03-11T08:00:00Z',
-};
 
 const meta: Meta<typeof TransactionRow> = {
   title: 'Transactions/TransactionsTable/TransactionRow',
@@ -45,7 +27,7 @@ const meta: Meta<typeof TransactionRow> = {
   decorators: [tableDecorator],
   parameters: { layout: 'padded' },
   args: {
-    transaction: TX,
+    transaction: makeTransaction(),
     columnOrder: DEFAULT_COLUMN_ORDER,
     labels: LABELS,
     onUpdated: () => {},
@@ -62,39 +44,36 @@ export const Debit: Story = {};
 // Credit (positive amount)
 export const Credit: Story = {
   args: {
-    transaction: {
-      ...TX,
+    transaction: makeTransaction({
       id: 2,
       concept: 'DIRECT DEPOSIT - EMPLOYER',
       amount: 2400.0,
-      account_name: "Bob's Checking",
+      account_name: "Seth's Checking",
       bank_name: 'SoFi',
-    },
+    }),
   },
 };
 
 // Row with a label and category pre-assigned
 export const WithLabel: Story = {
   args: {
-    transaction: {
-      ...TX,
+    transaction: makeTransaction({
       concept: 'NETFLIX.COM',
       amount: -15.49,
       label_id: 2,
       label_name: 'Subscriptions',
       label_color: '#7c3aed',
       category: 'Entertainment',
-    },
+    }),
   },
 };
 
 // Long concept — verifies text wraps cleanly
 export const LongConcept: Story = {
   args: {
-    transaction: {
-      ...TX,
+    transaction: makeTransaction({
       concept: 'AMAZON MARKETPLACE AMZN.COM/BILL WA 98109 US ONLINE PURCHASE REFUND',
-    },
+    }),
   },
 };
 

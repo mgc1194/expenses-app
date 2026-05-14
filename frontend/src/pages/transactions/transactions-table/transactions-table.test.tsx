@@ -3,7 +3,9 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { Label, Transaction } from '@serve/types/global';
+import type { Transaction } from '@serve/types/global';
+import { makeLabel, makeTransaction } from '@tests/factories';
+
 
 import { TransactionsTable } from './index';
 
@@ -18,36 +20,13 @@ vi.mock('@services/transactions', async importOriginal => {
   };
 });
 
-const LABELS: Label[] = [
-  { id: 1, name: 'Groceries', color: '#16a34a', category: 'Food', household_id: 1 },
-  { id: 2, name: 'Transport', color: '#2563eb', category: '', household_id: 1 },
+const LABELS = [
+  makeLabel({ id: 1, name: 'Groceries', color: '#16a34a', category: 'Food' }),
+  makeLabel({ id: 2, name: 'Transport', color: '#2563eb', category: '' }),
 ];
 
-const TX: Transaction = {
-  id: 1,
-  date: '2026-03-10',
-  concept: 'TRADER JOES #123',
-  amount: -42.57,
-  label_id: null,
-  label_name: null,
-  label_color: null,
-  category: null,
-  additional_labels: null,
-  exclude_from_summary: false,
-  source: 'csv',
-  account_id: 1,
-  account_name: "Alice's 360 Savings",
-  bank_name: 'Capital One',
-  imported_at: '2026-03-11T08:00:00Z',
-};
-
-const TX2: Transaction = {
-  ...TX,
-  id: 2,
-  date: '2026-03-09',
-  concept: 'DIRECT DEPOSIT',
-  amount: 2400.0,
-};
+const TX = makeTransaction();
+const TX2 = makeTransaction({ id: 2, date: '2026-03-09', concept: 'DIRECT DEPOSIT', amount: 2400.0 });
 
 // A full page of 20 transactions — matches PAGE_SIZE on the backend.
 const PAGE: Transaction[] = Array.from({ length: 20 }, (_, i) => ({

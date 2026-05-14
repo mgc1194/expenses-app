@@ -4,35 +4,30 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 
 import { AccountSelection } from '@pages/transactions/import-csv-dialog/account-selection';
-import type { AccountDetail } from '@serve/types/global';
+import { makeAccount } from '@tests/factories';
 
-const ACCOUNTS: AccountDetail[] = [
-  {
+const ACCOUNTS = [
+  makeAccount({
     id: 1,
     name: "Alice's 360 Savings",
     handler_key: 'co-savings',
-    account_type_id: 1,
     account_type: '360 Performance Savings',
     bank_id: 1,
     bank_name: 'Capital One',
     household_id: 1,
     household_name: 'Smith Household',
-    created_at: '2026-01-01T00:00:00Z',
-    updated_at: '2026-01-01T00:00:00Z',
-  },
-  {
+  }),
+  makeAccount({
     id: 2,
-    name: "Bob's Checking",
+    name: "Seth's Checking",
     handler_key: 'sofi-checking',
     account_type_id: 2,
     account_type: 'SoFi Checking',
     bank_id: 2,
     bank_name: 'SoFi',
-    household_id: 1,
-    household_name: 'Smith Household',
     created_at: '2026-01-15T00:00:00Z',
     updated_at: '2026-01-15T00:00:00Z',
-  },
+  }),
 ];
 
 function AccountSelectionWithState(

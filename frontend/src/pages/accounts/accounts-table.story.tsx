@@ -21,7 +21,7 @@ const ACCOUNTS: AccountDetail[] = [
   },
   {
     id: 2,
-    name: "Bob's Checking",
+    name: "Seth's Checking",
     handler_key: 'sofi-checking',
     account_type_id: 2,
     account_type: 'SoFi Checking',
