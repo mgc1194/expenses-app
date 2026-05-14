@@ -25,10 +25,10 @@ def alice(db):
 
 
 @pytest.fixture
-def bob(db):
+def seth(db):
     return CustomUser.objects.create_user(
-        username='bob',
-        email='bob@example.com',
+        username='seth',
+        email='seth@example.com',
         password='Password1!',
     )
 
@@ -42,10 +42,10 @@ def household(db, alice):
 
 
 @pytest.fixture
-def other_household(db, bob):
+def other_household(db, seth):
     """A household that alice does not belong to."""
-    h = Household.objects.create(name='Bob Household')
-    h.users.add(bob)
+    h = Household.objects.create(name='Seth Household')
+    h.users.add(seth)
     return h
 
 
@@ -87,14 +87,14 @@ class TestListAccounts:
         assert co_account.id in ids
 
     def test_does_not_return_accounts_from_other_users_households(
-        self, client, alice, bob, other_household, account_type
+        self, client, alice, seth, other_household, account_type
     ):
         Account.objects.create(
-            name='Bob Only', account_type=account_type, household=other_household
+            name='Seth Only', account_type=account_type, household=other_household
         )
         response = client.get('/accounts/', user=alice)
         names = {a['name'] for a in response.json()}
-        assert 'Bob Only' not in names
+        assert 'Seth Only' not in names
 
     def test_filters_by_household_id(self, client, alice, account, co_account, household):
         response = client.get(f'/accounts/?household_id={household.id}', user=alice)
@@ -253,7 +253,7 @@ class TestCreateAccount:
         assert 'already exists' in response.json()['detail'].lower()
 
     def test_allows_same_name_in_different_households(
-        self, client, alice, bob, household, other_household, account_type
+        self, client, alice, seth, household, other_household, account_type
     ):
         # Create account with same name in other_household
         Account.objects.create(
@@ -274,15 +274,15 @@ class TestCreateAccount:
         )
         assert response.status_code == 200
 
-    def test_returns_403_if_not_a_member(self, client, bob, household, account_type):
+    def test_returns_403_if_not_a_member(self, client, seth, household, account_type):
         response = client.post(
             '/accounts/',
             json={
                 'household_id': household.id,
                 'account_type_id': account_type.id,
-                'name': 'Bob Sneaking In',
+                'name': 'Seth Sneaking In',
             },
-            user=bob,
+            user=seth,
         )
         assert response.status_code == 403
 
@@ -385,8 +385,8 @@ class TestRenameAccount:
         assert response.status_code == 200
         assert response.json()['name'] == account.name
 
-    def test_returns_403_if_not_a_member(self, client, bob, account):
-        response = client.patch(f'/accounts/{account.id}/', json={'name': 'Hacked'}, user=bob)
+    def test_returns_403_if_not_a_member(self, client, seth, account):
+        response = client.patch(f'/accounts/{account.id}/', json={'name': 'Hacked'}, user=seth)
         assert response.status_code == 403
 
     def test_returns_404_for_nonexistent_account(self, client, alice):
@@ -405,8 +405,8 @@ class TestDeleteAccount:
         response = client.delete('/accounts/9999/', user=alice)
         assert response.status_code == 404
 
-    def test_returns_403_if_not_a_member(self, client, bob, account):
-        response = client.delete(f'/accounts/{account.id}/', user=bob)
+    def test_returns_403_if_not_a_member(self, client, seth, account):
+        response = client.delete(f'/accounts/{account.id}/', user=seth)
         assert response.status_code == 403
         assert Account.objects.filter(pk=account.id).exists()
 

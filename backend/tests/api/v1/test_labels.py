@@ -27,10 +27,10 @@ def alice(db):
 
 
 @pytest.fixture
-def bob(db):
+def seth(db):
     return CustomUser.objects.create_user(
-        username='bob',
-        email='bob@example.com',
+        username='seth',
+        email='seth@example.com',
         password='Password1!',
     )
 
@@ -43,9 +43,9 @@ def household(db, alice):
 
 
 @pytest.fixture
-def other_household(db, bob):
-    h = Household.objects.create(name='Bob Household')
-    h.users.add(bob)
+def other_household(db, seth):
+    h = Household.objects.create(name='Seth Household')
+    h.users.add(seth)
     return h
 
 
@@ -262,11 +262,11 @@ class TestUpdateLabel:
         assert response.status_code == 400
         assert 'already exists' in response.json()['detail'].lower()
 
-    def test_returns_403_if_not_a_member(self, client, bob, label):
+    def test_returns_403_if_not_a_member(self, client, seth, label):
         response = client.patch(
             f'/labels/{label.id}/',
             json={'name': 'Hacked'},
-            user=bob,
+            user=seth,
         )
         assert response.status_code == 403
 
@@ -289,8 +289,8 @@ class TestDeleteLabel:
         assert response.status_code == 204
         assert not Label.objects.filter(pk=label.id).exists()
 
-    def test_returns_403_if_not_a_member(self, client, bob, label):
-        response = client.delete(f'/labels/{label.id}/', user=bob)
+    def test_returns_403_if_not_a_member(self, client, seth, label):
+        response = client.delete(f'/labels/{label.id}/', user=seth)
         assert response.status_code == 403
         assert Label.objects.filter(pk=label.id).exists()
 
