@@ -27,10 +27,10 @@ def alice(db):
 
 
 @pytest.fixture
-def bob(db):
+def seth(db):
     return CustomUser.objects.create_user(
-        username='bob',
-        email='bob@example.com',
+        username='seth',
+        email='seth@example.com',
         password='Password1!',
     )
 
@@ -44,10 +44,10 @@ def household(db, alice):
 
 
 @pytest.fixture
-def shared_household(db, alice, bob):
-    """A household shared by alice and bob."""
+def shared_household(db, alice, seth):
+    """A household shared by alice and seth."""
     h = Household.objects.create(name='Shared Household')
-    h.users.add(alice, bob)
+    h.users.add(alice, seth)
     return h
 
 
@@ -56,16 +56,16 @@ def shared_household(db, alice, bob):
 
 @pytest.mark.django_db
 class TestListHouseholds:
-    def test_returns_only_users_households(self, client, alice, bob, household):
-        bob_household = Household.objects.create(name="Bob's Place")
-        bob_household.users.add(bob)
+    def test_returns_only_users_households(self, client, alice, seth, household):
+        seth_household = Household.objects.create(name="Seth's Place")
+        seth_household.users.add(seth)
 
         response = client.get('/households/', user=alice)
 
         assert response.status_code == 200
         ids = [h['id'] for h in response.json()]
         assert household.id in ids
-        assert bob_household.id not in ids
+        assert seth_household.id not in ids
 
     def test_returns_empty_list_when_no_households(self, client, alice):
         response = client.get('/households/', user=alice)
@@ -121,9 +121,9 @@ class TestCreateHousehold:
         assert response.status_code == 400
         assert 'already have a household named' in response.json()['detail']
 
-    def test_duplicate_name_for_different_user_is_allowed(self, client, alice, bob):
+    def test_duplicate_name_for_different_user_is_allowed(self, client, alice, seth):
         client.post('/households/', json={'name': 'My Home'}, user=alice)
-        response = client.post('/households/', json={'name': 'My Home'}, user=bob)
+        response = client.post('/households/', json={'name': 'My Home'}, user=seth)
         assert response.status_code == 200
 
     def test_unauthenticated_returns_401(self, client):
@@ -147,8 +147,8 @@ class TestGetHousehold:
         members = response.json()['members']
         assert any(m['email'] == alice.email for m in members)
 
-    def test_non_member_returns_403(self, client, bob, household):
-        response = client.get(f'/households/{household.id}/', user=bob)
+    def test_non_member_returns_403(self, client, seth, household):
+        response = client.get(f'/households/{household.id}/', user=seth)
         assert response.status_code == 403
 
     def test_nonexistent_returns_404(self, client, alice):
@@ -215,11 +215,11 @@ class TestRenameHousehold:
         )
         assert response.status_code == 200
 
-    def test_non_member_returns_403(self, client, bob, household):
+    def test_non_member_returns_403(self, client, seth, household):
         response = client.patch(
             f'/households/{household.id}/',
             json={'name': 'Hacked'},
-            user=bob,
+            user=seth,
         )
         assert response.status_code == 403
 
@@ -238,8 +238,8 @@ class TestDeleteHousehold:
         assert response.status_code == 204
         assert not Household.objects.filter(pk=household.id).exists()
 
-    def test_non_member_returns_403(self, client, bob, household):
-        response = client.delete(f'/households/{household.id}/', user=bob)
+    def test_non_member_returns_403(self, client, seth, household):
+        response = client.delete(f'/households/{household.id}/', user=seth)
         assert response.status_code == 403
         assert Household.objects.filter(pk=household.id).exists()
 
@@ -274,23 +274,23 @@ class TestDeleteHousehold:
 
 @pytest.mark.django_db
 class TestAddMember:
-    def test_adds_member_by_email(self, client, alice, bob, household):
+    def test_adds_member_by_email(self, client, alice, seth, household):
         response = client.post(
             f'/households/{household.id}/members/',
-            json={'email': bob.email},
+            json={'email': seth.email},
             user=alice,
         )
         assert response.status_code == 200
         members = response.json()['members']
-        assert any(m['email'] == bob.email for m in members)
+        assert any(m['email'] == seth.email for m in members)
 
-    def test_member_persisted_in_database(self, client, alice, bob, household):
+    def test_member_persisted_in_database(self, client, alice, seth, household):
         client.post(
             f'/households/{household.id}/members/',
-            json={'email': bob.email},
+            json={'email': seth.email},
             user=alice,
         )
-        assert household.users.filter(pk=bob.pk).exists()
+        assert household.users.filter(pk=seth.pk).exists()
 
     def test_unknown_email_returns_400(self, client, alice, household):
         response = client.post(
@@ -310,18 +310,18 @@ class TestAddMember:
         assert response.status_code == 400
         assert 'already a member' in response.json()['detail'].lower()
 
-    def test_non_member_cannot_add(self, client, bob, household):
+    def test_non_member_cannot_add(self, client, seth, household):
         response = client.post(
             f'/households/{household.id}/members/',
-            json={'email': bob.email},
-            user=bob,
+            json={'email': seth.email},
+            user=seth,
         )
         assert response.status_code == 403
 
-    def test_email_lookup_is_case_insensitive(self, client, alice, bob, household):
+    def test_email_lookup_is_case_insensitive(self, client, alice, seth, household):
         response = client.post(
             f'/households/{household.id}/members/',
-            json={'email': bob.email.upper()},
+            json={'email': seth.email.upper()},
             user=alice,
         )
         assert response.status_code == 200
@@ -332,25 +332,25 @@ class TestAddMember:
 
 @pytest.mark.django_db
 class TestRemoveMember:
-    def test_removes_member(self, client, alice, bob, shared_household):
+    def test_removes_member(self, client, alice, seth, shared_household):
         response = client.delete(
-            f'/households/{shared_household.id}/members/{bob.id}/',
+            f'/households/{shared_household.id}/members/{seth.id}/',
             user=alice,
         )
         assert response.status_code == 200
-        assert not any(m['email'] == bob.email for m in response.json()['members'])
+        assert not any(m['email'] == seth.email for m in response.json()['members'])
 
-    def test_member_removed_from_database(self, client, alice, bob, shared_household):
+    def test_member_removed_from_database(self, client, alice, seth, shared_household):
         client.delete(
-            f'/households/{shared_household.id}/members/{bob.id}/',
+            f'/households/{shared_household.id}/members/{seth.id}/',
             user=alice,
         )
-        assert not shared_household.users.filter(pk=bob.pk).exists()
+        assert not shared_household.users.filter(pk=seth.pk).exists()
 
-    def test_user_can_remove_themselves(self, client, alice, bob, shared_household):
+    def test_user_can_remove_themselves(self, client, alice, seth, shared_household):
         response = client.delete(
-            f'/households/{shared_household.id}/members/{bob.id}/',
-            user=bob,
+            f'/households/{shared_household.id}/members/{seth.id}/',
+            user=seth,
         )
         assert response.status_code == 200
 
@@ -362,17 +362,17 @@ class TestRemoveMember:
         assert response.status_code == 400
         assert 'last member' in response.json()['detail'].lower()
 
-    def test_non_member_cannot_remove_members(self, client, alice, bob, household):
-        # Bob is not a member of the household — he cannot remove anyone from it.
+    def test_non_member_cannot_remove_members(self, client, alice, seth, household):
+        # Seth is not a member of the household — he cannot remove anyone from it.
         response = client.delete(
             f'/households/{household.id}/members/{alice.id}/',
-            user=bob,
+            user=seth,
         )
         assert response.status_code == 403
 
-    def test_target_not_in_household_returns_400(self, client, alice, bob, household):
+    def test_target_not_in_household_returns_400(self, client, alice, seth, household):
         response = client.delete(
-            f'/households/{household.id}/members/{bob.id}/',
+            f'/households/{household.id}/members/{seth.id}/',
             user=alice,
         )
         assert response.status_code == 400

@@ -51,6 +51,8 @@ export function TransactionLabelCell({
     _event: React.SyntheticEvent,
     selected: Label | null | undefined,
   ) {
+    await Promise.resolve();
+
     const isClearing = selected == null || selected.id === NO_LABEL.id;
     const newLabelId = isClearing ? null : selected!.id;
 

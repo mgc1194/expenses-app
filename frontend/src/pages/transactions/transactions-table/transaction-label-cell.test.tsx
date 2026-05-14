@@ -1,12 +1,12 @@
 // pages/transactions/transactions-table/transaction-label-cell.test.tsx
 
 import { Table, TableBody } from '@mui/material';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { Label, Transaction } from '@serve/types/global';
 import * as transactionsService from '@services/transactions';
+import { makeLabel, makeTransaction } from '@tests/factories';
 
 import { TransactionLabelCell } from './transaction-label-cell';
 
@@ -17,35 +17,24 @@ vi.mock('@services/transactions', async importOriginal => {
 
 const mockUpdateTransactionLabel = vi.mocked(transactionsService.updateTransactionLabel);
 
-const LABELS: Label[] = [
-  { id: 1, name: 'Groceries', color: '#16a34a', category: 'Food', household_id: 1 },
-  { id: 2, name: 'Transport', color: '#2563eb', category: '', household_id: 1 },
+const LABELS = [
+  makeLabel({ id: 1, name: 'Groceries', color: '#16a34a', category: 'Food' }),
+  makeLabel({ id: 2, name: 'Transport', color: '#2563eb', category: '' }),
 ];
 
-const TX: Transaction = {
-  id: 1,
-  date: '2026-03-10',
-  concept: 'TRADER JOES #123',
-  amount: -42.57,
+const TX = makeTransaction({
   label_id: 1,
   label_name: 'Groceries',
   label_color: '#16a34a',
   category: 'Food',
-  additional_labels: null,
-  exclude_from_summary: false,
-  source: 'csv',
-  account_id: 1,
-  account_name: "Alice's 360 Savings",
-  bank_name: 'Capital One',
-  imported_at: '2026-03-11T08:00:00Z',
-};
+});
 
-const TX_NO_LABEL: Transaction = {
-  ...TX,
+const TX_NO_LABEL = makeTransaction({
   label_id: null,
   label_name: null,
   label_color: null,
-};
+  category: null,
+});
 
 function setup(props: Partial<React.ComponentProps<typeof TransactionLabelCell>> = {}) {
   const onUpdated = vi.fn();
@@ -153,7 +142,9 @@ describe('TransactionLabelCell — clearing via Enter on empty input', () => {
 
     const input = screen.getByRole('combobox');
     fireEvent.change(input, { target: { value: '' } });
-    fireEvent.keyDown(input, { key: 'Enter' });
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter' });
+    });
 
     await waitFor(() =>
       expect(mockUpdateTransactionLabel).toHaveBeenCalledWith(TX.id, null),
@@ -165,17 +156,20 @@ describe('TransactionLabelCell — clearing via Enter on empty input', () => {
 
     const input = screen.getByRole('combobox');
     fireEvent.change(input, { target: { value: 'Groc' } });
-    fireEvent.keyDown(input, { key: 'Enter' });
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter' });
+    });
 
-    await waitFor(() =>
-      expect(mockUpdateTransactionLabel).not.toHaveBeenCalled(),
-    );
+    expect(mockUpdateTransactionLabel).not.toHaveBeenCalled();
   });
 
-  it('does not throw when Enter is pressed on an empty input', () => {
+  it('does not throw when Enter is pressed on an empty input', async () => {
+    mockUpdateTransactionLabel.mockResolvedValueOnce(TX_NO_LABEL);
     setup();
     const input = screen.getByRole('combobox');
     fireEvent.change(input, { target: { value: '' } });
-    expect(() => fireEvent.keyDown(input, { key: 'Enter' })).not.toThrow();
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter' });
+    });
   });
 });

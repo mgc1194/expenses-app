@@ -36,7 +36,6 @@
       "@tests/*": ["tests/*"],
     }
   },
-  "include": [
-    "src"
-  ]
+  "include": ["src", "tests"],
+  "exclude": ["tests/**/*.test.ts", "tests/**/*.test.tsx"]
 }

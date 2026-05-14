@@ -5,9 +5,9 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DEFAULT_COLUMN_ORDER } from '@pages/transactions/transactions-table/columns';
-import type { Label, Transaction } from '@serve/types/global';
 import { ApiError } from '@services/transactions';
 import * as transactionsService from '@services/transactions';
+import { makeLabel, makeTransaction } from '@tests/factories';
 
 import { TransactionRow } from './transaction-row';
 
@@ -25,28 +25,12 @@ vi.mock('@services/transactions', async importOriginal => {
 const mockUpdateConcept = vi.mocked(transactionsService.updateTransactionConcept);
 const mockDeleteTransaction = vi.mocked(transactionsService.deleteTransaction);
 
-const LABELS: Label[] = [
-  { id: 1, name: 'Groceries', color: '#16a34a', category: 'Food', household_id: 1 },
-  { id: 2, name: 'Transport', color: '#2563eb', category: '', household_id: 1 },
+const LABELS = [
+  makeLabel({ id: 1, name: 'Groceries', color: '#16a34a', category: 'Food' }),
+  makeLabel({ id: 2, name: 'Transport', color: '#2563eb', category: '' }),
 ];
-
-const TX: Transaction = {
-  id: 1,
-  date: '2026-03-10',
-  concept: 'TRADER JOES #123',
-  amount: -42.57,
-  label_id: null,
-  label_name: null,
-  label_color: null,
-  category: 'Groceries',
-  additional_labels: null,
-  exclude_from_summary: false,
-  source: 'csv',
-  account_id: 1,
-  account_name: "Alice's 360 Savings",
-  bank_name: 'Capital One',
-  imported_at: '2026-03-11T08:00:00Z',
-};
+ 
+const TX = makeTransaction({ category: 'Groceries' });
 
 function setup(props: Partial<React.ComponentProps<typeof TransactionRow>> = {}) {
   const onUpdated = vi.fn();

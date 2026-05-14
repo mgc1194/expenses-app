@@ -32,10 +32,10 @@ def alice(db):
 
 
 @pytest.fixture
-def bob(db):
+def seth(db):
     return CustomUser.objects.create_user(
-        username='bob',
-        email='bob@example.com',
+        username='seth',
+        email='seth@example.com',
         password='Password1!',
     )
 
@@ -49,10 +49,10 @@ def household(db, alice):
 
 
 @pytest.fixture
-def other_household(db, bob):
+def other_household(db, seth):
     """A household that alice does not belong to."""
-    h = Household.objects.create(name='Bob Household')
-    h.users.add(bob)
+    h = Household.objects.create(name='Seth Household')
+    h.users.add(seth)
     return h
 
 
@@ -244,8 +244,8 @@ class TestListTransactions:
         response = client.get(f'/transactions/?household_id={household.id}')
         assert response.status_code == 401
 
-    def test_returns_403_for_non_member(self, client, bob, household):
-        response = client.get(f'/transactions/?household_id={household.id}', user=bob)
+    def test_returns_403_for_non_member(self, client, seth, household):
+        response = client.get(f'/transactions/?household_id={household.id}', user=seth)
         assert response.status_code == 403
 
     def test_returns_404_for_nonexistent_household(self, client, alice):
@@ -355,7 +355,7 @@ class TestCreateTransaction:
         assert response.status_code == 400
         assert 'already exists' in response.json()['detail'].lower()
 
-    def test_returns_403_for_non_member(self, client, bob, account):
+    def test_returns_403_for_non_member(self, client, seth, account):
         response = client.post(
             '/transactions/',
             json={
@@ -364,7 +364,7 @@ class TestCreateTransaction:
                 'concept': 'SPOTIFY',
                 'amount': -9.99,
             },
-            user=bob,
+            user=seth,
         )
         assert response.status_code == 403
 
@@ -605,11 +605,11 @@ class TestUpdateTransaction:
         )
         assert response.status_code == 400
 
-    def test_non_member_cannot_toggle_exclusion(self, client, bob, transaction):
+    def test_non_member_cannot_toggle_exclusion(self, client, seth, transaction):
         response = client.patch(
             f'/transactions/{transaction.id}/',
             json={'exclude_from_summary': True},
-            user=bob,
+            user=seth,
         )
         assert response.status_code == 403
 
@@ -624,11 +624,11 @@ class TestUpdateTransaction:
         assert response.status_code == 400
         assert 'at least one field' in response.json()['detail'].lower()
 
-    def test_returns_403_for_non_member(self, client, bob, transaction):
+    def test_returns_403_for_non_member(self, client, seth, transaction):
         response = client.patch(
             f'/transactions/{transaction.id}/',
             json={'concept': 'HACKED'},
-            user=bob,
+            user=seth,
         )
         assert response.status_code == 403
 
@@ -673,10 +673,10 @@ class TestDeleteTransaction:
         client.delete(f'/transactions/{transaction_id}/', user=alice)
         assert not Transaction.objects.filter(pk=transaction_id).exists()
 
-    def test_returns_403_for_non_member(self, client, bob, transaction):
+    def test_returns_403_for_non_member(self, client, seth, transaction):
         response = client.delete(
             f'/transactions/{transaction.id}/',
-            user=bob,
+            user=seth,
         )
         assert response.status_code == 403
         assert Transaction.objects.filter(pk=transaction.id).exists()
@@ -731,11 +731,11 @@ class TestImportTransactions:
         assert data['total'] == 1
         assert data['error'] is None
 
-    def test_returns_403_for_non_member(self, client, bob, account, csv_file):
+    def test_returns_403_for_non_member(self, client, seth, account, csv_file):
         response = client.post(
             f'/transactions/import?account_id={account.id}',
             FILES={'file': csv_file},
-            user=bob,
+            user=seth,
         )
         assert response.status_code == 403
 

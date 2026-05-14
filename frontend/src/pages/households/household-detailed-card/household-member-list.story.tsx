@@ -13,7 +13,7 @@ type Story = StoryObj<typeof HouseholdMemberList>;
 
 const MEMBERS = [
   { id: 1, first_name: 'Alice', last_name: 'Nguyen',  email: 'alice@example.com' },
-  { id: 2, first_name: 'Bob',   last_name: 'Okafor',  email: 'bob@example.com'   },
+  { id: 2, first_name: 'Seth',   last_name: 'Okafor',  email: 'seth@example.com'   },
   { id: 3, first_name: 'Carol', last_name: 'Santos',  email: 'carol@example.com' },
 ];
 

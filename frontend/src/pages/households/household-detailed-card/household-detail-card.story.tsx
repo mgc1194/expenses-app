@@ -32,7 +32,7 @@ export const WithMembers: Story = {
       ...baseHousehold,
       members: [
         { id: 1, email: 'alice@example.com', first_name: 'Alice', last_name: 'Smith' },
-        { id: 2, email: 'bob@example.com', first_name: 'Bob', last_name: 'Smith' },
+        { id: 2, email: 'seth@example.com', first_name: 'Seth', last_name: 'Smith' },
       ],
     },
     accountCount: 1,

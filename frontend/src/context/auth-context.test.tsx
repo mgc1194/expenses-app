@@ -17,7 +17,7 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 
 describe('AuthProvider', () => {
   it('starts in loading state', () => {
-    mockGetMe.mockResolvedValueOnce({} as never);
+    mockGetMe.mockReturnValue(new Promise(() => {}));
     const { result } = renderHook(() => useAuth(), { wrapper });
     expect(result.current.isLoading).toBe(true);
   });

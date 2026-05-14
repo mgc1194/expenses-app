@@ -3,16 +3,16 @@
 import type { Meta, StoryObj } from '@storybook/react';
 
 import { TransactionsTable } from '@pages/transactions/transactions-table';
-import type { Label, Transaction } from '@serve/types/global';
+import { makeLabel, makeTransaction } from '@tests/factories';
 
-const LABELS: Label[] = [
-  { id: 1, name: 'Groceries', color: '#16a34a', category: 'Food', household_id: 1 },
-  { id: 2, name: 'Subscriptions', color: '#7c3aed', category: 'Entertainment', household_id: 1 },
-  { id: 3, name: 'Transport', color: '#2563eb', category: '', household_id: 1 },
+const LABELS = [
+  makeLabel({ id: 1, name: 'Groceries', color: '#16a34a', category: 'Food' }),
+  makeLabel({ id: 2, name: 'Subscriptions', color: '#7c3aed', category: 'Entertainment' }),
+  makeLabel({ id: 3, name: 'Transport', color: '#2563eb', category: '' }),
 ];
 
-const TRANSACTIONS: Transaction[] = [
-  {
+const TRANSACTIONS = [
+  makeTransaction({
     id: 1,
     date: '2026-03-10',
     concept: 'TRADER JOES #123',
@@ -21,15 +21,8 @@ const TRANSACTIONS: Transaction[] = [
     label_name: 'Groceries',
     label_color: '#16a34a',
     category: 'Food',
-    additional_labels: null,
-    exclude_from_summary: false,
-    source: 'csv',
-    account_id: 1,
-    account_name: "Alice's 360 Savings",
-    bank_name: 'Capital One',
-    imported_at: '2026-03-11T08:00:00Z',
-  },
-  {
+  }),
+  makeTransaction({
     id: 2,
     date: '2026-03-09',
     concept: 'DIRECT DEPOSIT - EMPLOYER',
@@ -38,15 +31,11 @@ const TRANSACTIONS: Transaction[] = [
     label_name: null,
     label_color: null,
     category: null,
-    additional_labels: null,
-    exclude_from_summary: false,
-    source: 'csv',
     account_id: 2,
-    account_name: "Bob's Checking",
+    account_name: "Seth's Checking",
     bank_name: 'SoFi',
-    imported_at: '2026-03-11T08:00:00Z',
-  },
-  {
+  }),
+  makeTransaction({
     id: 3,
     date: '2026-03-08',
     concept: 'NETFLIX.COM',
@@ -55,31 +44,21 @@ const TRANSACTIONS: Transaction[] = [
     label_name: 'Subscriptions',
     label_color: '#7c3aed',
     category: 'Entertainment',
-    additional_labels: null,
-    exclude_from_summary: false,
-    source: 'csv',
     account_id: 2,
-    account_name: "Bob's Checking",
+    account_name: "Seth's Checking",
     bank_name: 'SoFi',
-    imported_at: '2026-03-11T08:00:00Z',
-  },
-  {
+  }),
+  makeTransaction({
     id: 4,
     date: '2026-03-07',
     concept: 'UBER',
-    amount: -18.00,
+    amount: -18.0,
     label_id: 3,
     label_name: 'Transport',
     label_color: '#2563eb',
     category: null,
-    additional_labels: null,
     exclude_from_summary: true,
-    source: 'csv',
-    account_id: 1,
-    account_name: "Alice's 360 Savings",
-    bank_name: 'Capital One',
-    imported_at: '2026-03-11T08:00:00Z',
-  },
+  }),
 ];
 
 const meta: Meta<typeof TransactionsTable> = {

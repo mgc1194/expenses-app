@@ -9,6 +9,8 @@ vi.mock('@services/households', async (importOriginal) => {
   return { ...actual, renameHousehold: vi.fn(), deleteHousehold: vi.fn(), addMember: vi.fn() };
 });
 
+vi.mock('@services/labels', () => ({ listLabels: vi.fn(() => new Promise(() => {})) }));
+
 const mockNavigate = vi.fn();
 vi.mock('react-router', async () => {
   const actual = await vi.importActual('react-router');

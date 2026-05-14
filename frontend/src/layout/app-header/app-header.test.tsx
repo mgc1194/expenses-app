@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { act, render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -45,9 +45,12 @@ describe('AppHeader', () => {
     mockLogout.mockResolvedValueOnce(undefined);
 
     render(<MemoryRouter><AppHeader /></MemoryRouter>);
-    fireEvent.click(screen.getByRole('button', { name: /sign out/i }));
 
-    await vi.waitFor(() => expect(mockLogout).toHaveBeenCalledOnce());
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /sign out/i }));
+    });
+
+    expect(mockLogout).toHaveBeenCalledOnce();
     expect(setUser).toHaveBeenCalledWith(null);
   });
 });

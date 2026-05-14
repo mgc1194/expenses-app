@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HouseholdsPage } from '@pages/households';
 import * as accountsService from '@services/accounts';
 import * as service from '@services/households';
+import * as labelsService from '@services/labels';
 
 vi.mock('@context/auth-context', () => ({
   useAuth: () => ({
@@ -79,6 +80,7 @@ function renderPage() {
 beforeEach(() => {
   vi.spyOn(service, 'listHouseholds').mockResolvedValue([household]);
   vi.spyOn(accountsService, 'listAccounts').mockResolvedValue([account]);
+  vi.spyOn(labelsService, 'listLabels').mockResolvedValue([]);
   mockNavigate.mockReset();
 });
 
