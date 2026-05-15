@@ -232,4 +232,4 @@ def delete_label(request, label_id: int):
 
     logger.info(f'User {request.user.email} deleted label (id={label_id}).')
 
-    return 204, None
+    return None

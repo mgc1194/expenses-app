@@ -278,7 +278,7 @@ def delete_household(request, household_id: int):
 
     logger.info(f'User {request.user.email} deleted household (id={household_id}).')
 
-    return 204, None
+    return None
 
 
 # ── Add member ────────────────────────────────────────────────────────────────

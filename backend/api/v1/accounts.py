@@ -250,7 +250,7 @@ def delete_account(request, account_id: int):
         f'(id={account_id}) from household (id={account.household_id}).'
     )
 
-    return 204, None
+    return None
 
 
 def _serialize(account: Account) -> dict:
