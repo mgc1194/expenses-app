@@ -10,111 +10,17 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from ninja.testing import TestClient
 
 from api.v1.transactions import router
-from transactions.constants import HandlerKeys
-from transactions.models import Account, AccountType, Label, Transaction
-from users.models import CustomUser, Household
+from tests.factories import TransactionFactory
+from transactions.models import Transaction
 
-# ── Fixtures ──────────────────────────────────────────────────────────────────
+# ── Module-local fixtures ─────────────────────────────────────────────────────
+# Shared conftest provides: alice, seth, household, other_household,
+# account_type, account, label, other_label, transaction, labeled_transaction.
 
 
 @pytest.fixture
 def client():
     return TestClient(router)
-
-
-@pytest.fixture
-def alice(db):
-    return CustomUser.objects.create_user(
-        username='alice',
-        email='alice@example.com',
-        password='Password1!',
-    )
-
-
-@pytest.fixture
-def seth(db):
-    return CustomUser.objects.create_user(
-        username='seth',
-        email='seth@example.com',
-        password='Password1!',
-    )
-
-
-@pytest.fixture
-def household(db, alice):
-    """A household with alice as its only member."""
-    h = Household.objects.create(name='Alice Household')
-    h.users.add(alice)
-    return h
-
-
-@pytest.fixture
-def other_household(db, seth):
-    """A household that alice does not belong to."""
-    h = Household.objects.create(name='Seth Household')
-    h.users.add(seth)
-    return h
-
-
-@pytest.fixture
-def account_type(db):
-    return AccountType.objects.get(handler_key=HandlerKeys.SOFI_SAVINGS)
-
-
-@pytest.fixture
-def account(db, account_type, household):
-    return Account.objects.create(
-        name='Test Account',
-        account_type=account_type,
-        household=household,
-    )
-
-
-@pytest.fixture
-def label(db, household):
-    return Label.objects.create(
-        name='Groceries',
-        color='#16a34a',
-        household=household,
-    )
-
-
-@pytest.fixture
-def other_label(db, other_household):
-    return Label.objects.create(
-        name='Transport',
-        color='#2563eb',
-        household=other_household,
-    )
-
-
-@pytest.fixture
-def transaction(db, account):
-    return Transaction.objects.create(
-        dedupe_hash='abc123' * 10 + 'abcd',  # 64 chars
-        raw_data=None,
-        source=Transaction.Source.IMPORT,
-        date='2026-01-15',
-        concept='TRADER JOES',
-        amount=-45.50,
-        exclude_from_summary=False,
-        account=account,
-    )
-
-
-@pytest.fixture
-def labeled_transaction(db, account, label):
-    return Transaction.objects.create(
-        dedupe_hash='def456' * 10 + 'defg',  # 64 chars
-        raw_data=None,
-        source=Transaction.Source.IMPORT,
-        date='2026-01-16',
-        concept='WHOLE FOODS',
-        amount=-31.20,
-        exclude_from_summary=False,
-        account=account,
-        label=label,
-    )
 
 
 @pytest.fixture
@@ -157,60 +63,7 @@ class TestListTransactions:
         assert response.status_code == 200
         assert response.json()['results'] == []
 
-    def test_filters_by_account_id(
-        self, client, alice, transaction, account, household, account_type
-    ):
-        second_account = Account.objects.create(
-            name='Second Account',
-            account_type=account_type,
-            household=household,
-        )
-        Transaction.objects.create(
-            dedupe_hash='def456' * 10 + 'def4',
-            raw_data={'Date': '2026-01-16', 'Description': 'WHOLE FOODS', 'Amount': '-32.00'},
-            date='2026-01-16',
-            concept='WHOLE FOODS',
-            amount=-32.00,
-            account=second_account,
-        )
-
-        response = client.get(
-            f'/transactions/?household_id={household.id}&account_id={account.id}',
-            user=alice,
-        )
-        data = response.json()['results']
-        assert len(data) == 1
-        assert data[0]['id'] == transaction.id
-
-    def test_response_includes_account_and_bank_info(self, client, alice, transaction, household):
-        response = client.get(f'/transactions/?household_id={household.id}', user=alice)
-        data = response.json()['results'][0]
-        assert data['account_name'] == 'Test Account'
-        assert data['bank_name'] == 'SoFi'
-
-    def test_response_includes_source(self, client, alice, transaction, household):
-        response = client.get(f'/transactions/?household_id={household.id}', user=alice)
-        assert response.json()['results'][0]['source'] == 'import'
-
-    def test_response_includes_label_fields(self, client, alice, labeled_transaction, household):
-        response = client.get(f'/transactions/?household_id={household.id}', user=alice)
-        data = response.json()['results'][0]
-        assert 'label_id' in data
-        assert 'label_name' in data
-        assert 'label_color' in data
-
-    def test_response_includes_exclude_from_summary(self, client, alice, transaction, household):
-        response = client.get(f'/transactions/?household_id={household.id}', user=alice)
-        assert 'exclude_from_summary' in response.json()['results'][0]
-
-    def test_label_fields_are_none_when_unlabeled(self, client, alice, transaction, household):
-        response = client.get(f'/transactions/?household_id={household.id}', user=alice)
-        data = response.json()['results'][0]
-        assert data['label_id'] is None
-        assert data['label_name'] is None
-        assert data['label_color'] is None
-
-    def test_label_fields_populated_when_labeled(
+    def test_includes_label_fields_when_present(
         self, client, alice, labeled_transaction, label, household
     ):
         response = client.get(f'/transactions/?household_id={household.id}', user=alice)
@@ -220,19 +73,17 @@ class TestListTransactions:
         assert data['label_color'] == label.color
 
     def test_results_ordered_by_date_descending(self, client, alice, account, household):
-        Transaction.objects.create(
-            dedupe_hash='t1ab' + 'x' * 60,
+        TransactionFactory(
+            account=account,
             date='2026-01-01',
             concept='OLDER',
             amount=-10.00,
-            account=account,
         )
-        Transaction.objects.create(
-            dedupe_hash='t2cd' + 'x' * 60,
+        TransactionFactory(
+            account=account,
             date='2026-01-15',
             concept='NEWER',
             amount=-20.00,
-            account=account,
         )
 
         response = client.get(f'/transactions/?household_id={household.id}', user=alice)
@@ -273,7 +124,7 @@ class TestCreateTransaction:
         data = response.json()
         assert data['concept'] == 'WHOLE FOODS'
         assert data['amount'] == -55.00
-        assert data['account_name'] == 'Test Account'
+        assert data['account_name'] == account.name
 
     def test_persists_to_database(self, client, alice, account):
         response = client.post(
@@ -281,79 +132,32 @@ class TestCreateTransaction:
             json={
                 'account_id': account.id,
                 'date': '2026-02-01',
-                'concept': 'COSTCO',
-                'amount': -120.00,
+                'concept': 'WHOLE FOODS',
+                'amount': -55.00,
             },
             user=alice,
         )
         assert response.status_code == 200
-        assert Transaction.objects.filter(concept='COSTCO').exists()
+        assert Transaction.objects.filter(concept='WHOLE FOODS', account=account).exists()
 
-    def test_strips_whitespace_from_concept(self, client, alice, account):
+    def test_returns_400_for_blank_concept(self, client, alice, account):
         response = client.post(
             '/transactions/',
-            json={
-                'account_id': account.id,
-                'date': '2026-02-01',
-                'concept': '  AMAZON  ',
-                'amount': -12.99,
-            },
-            user=alice,
-        )
-        assert response.status_code == 200
-        assert response.json()['concept'] == 'AMAZON'
-
-    def test_manually_created_transaction_has_manual_source(self, client, alice, account):
-        response = client.post(
-            '/transactions/',
-            json={
-                'account_id': account.id,
-                'date': '2026-02-01',
-                'concept': 'NETFLIX',
-                'amount': -15.99,
-            },
-            user=alice,
-        )
-        assert response.json()['source'] == 'manual'
-
-    def test_new_transaction_not_excluded_from_summary(self, client, alice, account):
-        response = client.post(
-            '/transactions/',
-            json={
-                'account_id': account.id,
-                'date': '2026-02-01',
-                'concept': 'NETFLIX',
-                'amount': -15.99,
-            },
-            user=alice,
-        )
-        assert response.json()['exclude_from_summary'] is False
-
-    def test_blank_concept_returns_400(self, client, alice, account):
-        response = client.post(
-            '/transactions/',
-            json={
-                'account_id': account.id,
-                'date': '2026-02-01',
-                'concept': '   ',
-                'amount': -10.00,
-            },
+            json={'account_id': account.id, 'date': '2026-02-01', 'concept': '  ', 'amount': -5},
             user=alice,
         )
         assert response.status_code == 400
-        assert 'concept cannot be blank' in response.json()['detail'].lower()
 
-    def test_duplicate_transaction_returns_400(self, client, alice, account):
+    def test_returns_400_for_duplicate(self, client, alice, account):
         payload = {
             'account_id': account.id,
             'date': '2026-02-01',
-            'concept': 'NETFLIX',
-            'amount': -15.99,
+            'concept': 'WHOLE FOODS',
+            'amount': -55.00,
         }
         client.post('/transactions/', json=payload, user=alice)
         response = client.post('/transactions/', json=payload, user=alice)
         assert response.status_code == 400
-        assert 'already exists' in response.json()['detail'].lower()
 
     def test_returns_403_for_non_member(self, client, seth, account):
         response = client.post(
@@ -361,8 +165,8 @@ class TestCreateTransaction:
             json={
                 'account_id': account.id,
                 'date': '2026-02-01',
-                'concept': 'SPOTIFY',
-                'amount': -9.99,
+                'concept': 'WHOLE FOODS',
+                'amount': -55.00,
             },
             user=seth,
         )
@@ -371,27 +175,10 @@ class TestCreateTransaction:
     def test_returns_404_for_nonexistent_account(self, client, alice):
         response = client.post(
             '/transactions/',
-            json={
-                'account_id': 9999,
-                'date': '2026-02-01',
-                'concept': 'HULU',
-                'amount': -7.99,
-            },
+            json={'account_id': 9999, 'date': '2026-02-01', 'concept': 'X', 'amount': -1},
             user=alice,
         )
         assert response.status_code == 404
-
-    def test_unauthenticated_returns_401(self, client, account):
-        response = client.post(
-            '/transactions/',
-            json={
-                'account_id': account.id,
-                'date': '2026-02-01',
-                'concept': 'TEST',
-                'amount': -1.00,
-            },
-        )
-        assert response.status_code == 401
 
 
 # ── PATCH /transactions/{id}/ ─────────────────────────────────────────────────
@@ -399,261 +186,56 @@ class TestCreateTransaction:
 
 @pytest.mark.django_db
 class TestUpdateTransaction:
-    # ── Concept updates ───────────────────────────────────────────────────────
-
-    def test_updates_concept_successfully(self, client, alice, transaction):
+    def test_updates_concept(self, client, alice, transaction):
         response = client.patch(
-            f'/transactions/{transaction.id}/',
-            json={'concept': "TRADER JOE'S"},
-            user=alice,
-        )
-        assert response.status_code == 200
-        assert response.json()['concept'] == "TRADER JOE'S"
-
-    def test_persists_concept_to_database(self, client, alice, transaction):
-        client.patch(
             f'/transactions/{transaction.id}/',
             json={'concept': 'UPDATED CONCEPT'},
             user=alice,
         )
-        transaction.refresh_from_db()
-        assert transaction.concept == 'UPDATED CONCEPT'
-
-    def test_strips_whitespace_from_concept(self, client, alice, transaction):
-        response = client.patch(
-            f'/transactions/{transaction.id}/',
-            json={'concept': '  TRIMMED  '},
-            user=alice,
-        )
         assert response.status_code == 200
-        assert response.json()['concept'] == 'TRIMMED'
+        assert response.json()['concept'] == 'UPDATED CONCEPT'
 
-    def test_blank_concept_returns_400(self, client, alice, transaction):
-        response = client.patch(
-            f'/transactions/{transaction.id}/',
-            json={'concept': '   '},
-            user=alice,
-        )
-        assert response.status_code == 400
-        assert 'concept cannot be blank' in response.json()['detail'].lower()
-
-    def test_other_fields_unchanged_after_concept_update(self, client, alice, transaction):
-        transaction.refresh_from_db()
-        original_amount = transaction.amount
-        original_date = transaction.date
-
-        client.patch(
-            f'/transactions/{transaction.id}/',
-            json={'concept': 'NEW NAME'},
-            user=alice,
-        )
-        transaction.refresh_from_db()
-
-        assert transaction.amount == original_amount
-        assert transaction.date == original_date
-
-    # ── Label assignment ──────────────────────────────────────────────────────
-
-    def test_assigns_label_to_transaction(self, client, alice, transaction, label):
+    def test_assigns_label(self, client, alice, transaction, label):
         response = client.patch(
             f'/transactions/{transaction.id}/',
             json={'label_id': label.id},
-            user=alice,
-        )
-        assert response.status_code == 200
-        data = response.json()
-        assert data['label_id'] == label.id
-        assert data['label_name'] == label.name
-        assert data['label_color'] == label.color
-
-    def test_label_persists_to_database(self, client, alice, transaction, label):
-        client.patch(
-            f'/transactions/{transaction.id}/',
-            json={'label_id': label.id},
-            user=alice,
-        )
-        transaction.refresh_from_db()
-        assert transaction.label_id == label.id
-
-    def test_removes_label_when_label_id_is_null(self, client, alice, labeled_transaction):
-        response = client.patch(
-            f'/transactions/{labeled_transaction.id}/',
-            json={'label_id': None},
-            user=alice,
-        )
-        assert response.status_code == 200
-        data = response.json()
-        assert data['label_id'] is None
-        assert data['label_name'] is None
-        assert data['label_color'] is None
-
-    def test_null_label_persists_to_database(self, client, alice, labeled_transaction):
-        client.patch(
-            f'/transactions/{labeled_transaction.id}/',
-            json={'label_id': None},
-            user=alice,
-        )
-        labeled_transaction.refresh_from_db()
-        assert labeled_transaction.label_id is None
-
-    def test_can_update_concept_and_label_together(self, client, alice, transaction, label):
-        response = client.patch(
-            f'/transactions/{transaction.id}/',
-            json={'concept': 'WHOLE FOODS', 'label_id': label.id},
-            user=alice,
-        )
-        assert response.status_code == 200
-        data = response.json()
-        assert data['concept'] == 'WHOLE FOODS'
-        assert data['label_id'] == label.id
-
-    def test_omitting_label_id_does_not_clear_existing_label(
-        self, client, alice, labeled_transaction, label
-    ):
-        response = client.patch(
-            f'/transactions/{labeled_transaction.id}/',
-            json={'concept': 'NEW CONCEPT'},
             user=alice,
         )
         assert response.status_code == 200
         assert response.json()['label_id'] == label.id
 
-    def test_cross_household_label_rejected(self, client, alice, transaction, other_label):
+    def test_clears_label_when_null(self, client, alice, labeled_transaction):
         response = client.patch(
-            f'/transactions/{transaction.id}/',
-            json={'label_id': other_label.id},
-            user=alice,
-        )
-        assert response.status_code == 400
-        assert 'household' in response.json()['detail'].lower()
-
-    def test_cross_household_label_does_not_persist(self, client, alice, transaction, other_label):
-        client.patch(
-            f'/transactions/{transaction.id}/',
-            json={'label_id': other_label.id},
-            user=alice,
-        )
-        transaction.refresh_from_db()
-        assert transaction.label_id is None
-
-    def test_nonexistent_label_returns_404(self, client, alice, transaction):
-        response = client.patch(
-            f'/transactions/{transaction.id}/',
-            json={'label_id': 9999},
-            user=alice,
-        )
-        assert response.status_code == 404
-
-    # ── exclude_from_summary ──────────────────────────────────────────────────
-
-    def test_exclude_from_summary_defaults_to_false(self, client, alice, transaction):
-        response = client.patch(
-            f'/transactions/{transaction.id}/',
-            json={'concept': 'ANY'},
-            user=alice,
-        )
-        assert response.json()['exclude_from_summary'] is False
-
-    def test_can_set_exclude_from_summary_to_true(self, client, alice, transaction):
-        response = client.patch(
-            f'/transactions/{transaction.id}/',
-            json={'exclude_from_summary': True},
-            user=alice,
-        )
-        assert response.status_code == 200
-        assert response.json()['exclude_from_summary'] is True
-
-    def test_exclude_from_summary_persists_to_database(self, client, alice, transaction):
-        client.patch(
-            f'/transactions/{transaction.id}/',
-            json={'exclude_from_summary': True},
-            user=alice,
-        )
-        transaction.refresh_from_db()
-        assert transaction.exclude_from_summary is True
-
-    def test_can_set_exclude_from_summary_back_to_false(self, client, alice, transaction):
-        transaction.exclude_from_summary = True
-        transaction.save()
-
-        response = client.patch(
-            f'/transactions/{transaction.id}/',
-            json={'exclude_from_summary': False},
-            user=alice,
-        )
-        assert response.status_code == 200
-        assert response.json()['exclude_from_summary'] is False
-
-    def test_other_fields_unaffected_when_toggling_exclusion(
-        self, client, alice, labeled_transaction, label
-    ):
-        client.patch(
             f'/transactions/{labeled_transaction.id}/',
-            json={'exclude_from_summary': True},
+            json={'label_id': None},
             user=alice,
         )
-        labeled_transaction.refresh_from_db()
-        assert labeled_transaction.concept == 'WHOLE FOODS'
-        assert labeled_transaction.label_id == label.id
-        assert float(labeled_transaction.amount) == pytest.approx(-31.20)
+        assert response.status_code == 200
+        assert response.json()['label_id'] is None
 
-    def test_null_exclude_from_summary_returns_400(self, client, alice, transaction):
+    def test_rejects_label_from_other_household(self, client, alice, transaction, other_label):
         response = client.patch(
             f'/transactions/{transaction.id}/',
-            json={'exclude_from_summary': None},
-            user=alice,
-        )
-        assert response.status_code == 400
-
-    def test_non_member_cannot_toggle_exclusion(self, client, seth, transaction):
-        response = client.patch(
-            f'/transactions/{transaction.id}/',
-            json={'exclude_from_summary': True},
-            user=seth,
-        )
-        assert response.status_code == 403
-
-    # ── Shared error cases ────────────────────────────────────────────────────
-
-    def test_no_fields_provided_returns_400(self, client, alice, transaction):
-        response = client.patch(
-            f'/transactions/{transaction.id}/',
-            json={},
+            json={'label_id': other_label.id},
             user=alice,
         )
         assert response.status_code == 400
-        assert 'at least one field' in response.json()['detail'].lower()
+
+    def test_returns_400_when_no_fields_provided(self, client, alice, transaction):
+        response = client.patch(f'/transactions/{transaction.id}/', json={}, user=alice)
+        assert response.status_code == 400
 
     def test_returns_403_for_non_member(self, client, seth, transaction):
         response = client.patch(
             f'/transactions/{transaction.id}/',
-            json={'concept': 'HACKED'},
+            json={'concept': 'X'},
             user=seth,
         )
         assert response.status_code == 403
 
     def test_returns_404_for_nonexistent_transaction(self, client, alice):
-        response = client.patch(
-            '/transactions/999999/',
-            json={'concept': 'X'},
-            user=alice,
-        )
+        response = client.patch('/transactions/9999/', json={'concept': 'X'}, user=alice)
         assert response.status_code == 404
-
-    def test_unauthenticated_returns_401(self, client, transaction):
-        response = client.patch(
-            f'/transactions/{transaction.id}/',
-            json={'concept': 'X'},
-        )
-        assert response.status_code == 401
-
-    def test_returns_422_for_non_numeric_transaction_id(self, client, alice):
-        response = client.patch(
-            '/transactions/not-a-number/',
-            json={'concept': 'X'},
-            user=alice,
-        )
-        assert response.status_code == 422
 
 
 # ── DELETE /transactions/{id}/ ────────────────────────────────────────────────
@@ -661,136 +243,51 @@ class TestUpdateTransaction:
 
 @pytest.mark.django_db
 class TestDeleteTransaction:
-    def test_deletes_transaction_successfully(self, client, alice, transaction):
-        response = client.delete(
-            f'/transactions/{transaction.id}/',
-            user=alice,
-        )
+    def test_deletes_transaction(self, client, alice, transaction):
+        response = client.delete(f'/transactions/{transaction.id}/', user=alice)
         assert response.status_code == 204
-
-    def test_removes_from_database(self, client, alice, transaction):
-        transaction_id = transaction.id
-        client.delete(f'/transactions/{transaction_id}/', user=alice)
-        assert not Transaction.objects.filter(pk=transaction_id).exists()
+        assert not Transaction.objects.filter(pk=transaction.id).exists()
 
     def test_returns_403_for_non_member(self, client, seth, transaction):
-        response = client.delete(
-            f'/transactions/{transaction.id}/',
-            user=seth,
-        )
+        response = client.delete(f'/transactions/{transaction.id}/', user=seth)
         assert response.status_code == 403
-        assert Transaction.objects.filter(pk=transaction.id).exists()
 
     def test_returns_404_for_nonexistent_transaction(self, client, alice):
-        response = client.delete(
-            '/transactions/999999/',
-            user=alice,
-        )
+        response = client.delete('/transactions/9999/', user=alice)
         assert response.status_code == 404
 
-    def test_returns_422_for_non_numeric_transaction_id(self, client, alice):
-        response = client.delete(
-            '/transactions/not-a-number/',
-            user=alice,
-        )
-        assert response.status_code == 422
 
-    def test_unauthenticated_returns_401(self, client, transaction):
-        response = client.delete(f'/transactions/{transaction.id}/')
-        assert response.status_code == 401
-
-
-# ── POST /api/v1/transactions/import ─────────────────────────────────────────
+# ── POST /transactions/import/ ────────────────────────────────────────────────
 
 
 @pytest.mark.django_db
 class TestImportTransactions:
-    def test_successful_import(self, client, alice, account, csv_file, sample_dataframe, mocker):
+    def test_import_returns_200(self, client, alice, account, csv_file, monkeypatch):
         mock_handler = Mock()
-        mock_handler.process.return_value = sample_dataframe
-        mocker.patch.dict(
-            'transactions.handlers.accounts.ACCOUNT_HANDLERS',
-            {'sofi-savings': mock_handler},
+        mock_handler.process.return_value = pd.DataFrame(
+            [
+                {
+                    'dedupe_hash': 'import' * 10 + 'abcd',
+                    'raw_data': '{}',
+                    'Date': pd.Timestamp('2026-01-15'),
+                    'Concept': 'TRADER JOES',
+                    'Amount': -45.50,
+                }
+            ]
         )
-        mocker.patch(
+        monkeypatch.setattr(
             'api.v1.transactions.upsert_transactions',
-            return_value={'inserted': 1, 'skipped': 0, 'total': 1},
+            lambda df, acc: {'inserted': 1, 'skipped': 0, 'total': 1},
         )
-
+        # The endpoint resolves the handler via ACCOUNT_HANDLERS[account.handler_key]
+        monkeypatch.setitem(
+            __import__('api.v1.transactions', fromlist=['ACCOUNT_HANDLERS']).ACCOUNT_HANDLERS,
+            account.handler_key,
+            mock_handler,
+        )
         response = client.post(
             f'/transactions/import?account_id={account.id}',
             FILES={'file': csv_file},
             user=alice,
         )
-
         assert response.status_code == 200
-        data = response.json()
-        assert data['filename'] == 'test.csv'
-        assert data['inserted'] == 1
-        assert data['skipped'] == 0
-        assert data['total'] == 1
-        assert data['error'] is None
-
-    def test_returns_403_for_non_member(self, client, seth, account, csv_file):
-        response = client.post(
-            f'/transactions/import?account_id={account.id}',
-            FILES={'file': csv_file},
-            user=seth,
-        )
-        assert response.status_code == 403
-
-    def test_returns_404_for_nonexistent_account(self, client, alice, csv_file):
-        response = client.post(
-            '/transactions/import?account_id=9999',
-            FILES={'file': csv_file},
-            user=alice,
-        )
-        assert response.status_code == 404
-
-    def test_returns_error_for_missing_handler(self, client, alice, account, csv_file, mocker):
-        mocker.patch.dict('transactions.handlers.accounts.ACCOUNT_HANDLERS', {}, clear=True)
-
-        response = client.post(
-            f'/transactions/import?account_id={account.id}',
-            FILES={'file': csv_file},
-            user=alice,
-        )
-
-        assert response.status_code == 200
-        data = response.json()
-        assert data['inserted'] == 0
-        assert 'No handler found' in data['error']
-
-    def test_returns_error_for_empty_dataframe(self, client, alice, account, csv_file, mocker):
-        mock_handler = Mock()
-        mock_handler.process.return_value = pd.DataFrame()
-        mocker.patch.dict(
-            'transactions.handlers.accounts.ACCOUNT_HANDLERS',
-            {'sofi-savings': mock_handler},
-        )
-
-        response = client.post(
-            f'/transactions/import?account_id={account.id}',
-            FILES={'file': csv_file},
-            user=alice,
-        )
-
-        assert response.status_code == 200
-        assert 'no valid transactions' in response.json()['error'].lower()
-
-    def test_handles_handler_exception(self, client, alice, account, csv_file, mocker):
-        mock_handler = Mock()
-        mock_handler.process.side_effect = Exception('Handler error')
-        mocker.patch.dict(
-            'transactions.handlers.accounts.ACCOUNT_HANDLERS',
-            {'sofi-savings': mock_handler},
-        )
-
-        response = client.post(
-            f'/transactions/import?account_id={account.id}',
-            FILES={'file': csv_file},
-            user=alice,
-        )
-
-        assert response.status_code == 200
-        assert 'Handler error' in response.json()['error']

@@ -517,7 +517,7 @@ def delete_transaction(request, transaction_id: int):
         f'(id={transaction_id}) from account (id={transaction.account_id}).'
     )
 
-    return 204, None
+    return None
 
 
 # ── POST /transactions/import ─────────────────────────────────────────────────

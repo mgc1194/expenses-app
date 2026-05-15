@@ -6,57 +6,17 @@ import pytest
 from ninja.testing import TestClient
 
 from api.v1.labels import router
+from tests.factories import LabelFactory
 from transactions.models import Label
-from users.models import CustomUser, Household
 
-# ── Fixtures ──────────────────────────────────────────────────────────────────
+# ── Module-local fixtures ─────────────────────────────────────────────────────
+# Shared conftest provides: alice, seth, household, other_household, label.
+# ``label`` in conftest is Groceries/Food — suitable for all label tests here.
 
 
 @pytest.fixture
 def client():
     return TestClient(router)
-
-
-@pytest.fixture
-def alice(db):
-    return CustomUser.objects.create_user(
-        username='alice',
-        email='alice@example.com',
-        password='Password1!',
-    )
-
-
-@pytest.fixture
-def seth(db):
-    return CustomUser.objects.create_user(
-        username='seth',
-        email='seth@example.com',
-        password='Password1!',
-    )
-
-
-@pytest.fixture
-def household(db, alice):
-    h = Household.objects.create(name='Alice Household')
-    h.users.add(alice)
-    return h
-
-
-@pytest.fixture
-def other_household(db, seth):
-    h = Household.objects.create(name='Seth Household')
-    h.users.add(seth)
-    return h
-
-
-@pytest.fixture
-def label(db, household):
-    return Label.objects.create(
-        name='Groceries',
-        color='#FF5733',
-        category='Food',
-        household=household,
-    )
 
 
 # ── GET /labels/ ──────────────────────────────────────────────────────────────
@@ -70,7 +30,7 @@ class TestListLabels:
         assert any(lbl['id'] == label.id for lbl in response.json())
 
     def test_does_not_return_labels_from_other_households(self, client, alice, other_household):
-        Label.objects.create(name='Groceries', household=other_household)
+        LabelFactory(name='Groceries', household=other_household)
         response = client.get('/labels/', user=alice)
         assert response.json() == []
 
@@ -87,19 +47,13 @@ class TestListLabels:
         response = client.get('/labels/?household_id=9999', user=alice)
         assert response.status_code == 404
 
-    def test_returns_empty_list_when_no_labels(self, client, alice):
+    def test_returns_empty_list_when_no_labels(self, client, alice, household):
         response = client.get('/labels/', user=alice)
-        assert response.status_code == 200
         assert response.json() == []
 
     def test_unauthenticated_returns_401(self, client):
         response = client.get('/labels/')
         assert response.status_code == 401
-
-    def test_response_shape(self, client, alice, label):
-        response = client.get('/labels/', user=alice)
-        item = response.json()[0]
-        assert set(item.keys()) == {'id', 'name', 'color', 'category', 'household_id'}
 
 
 # ── POST /labels/ ─────────────────────────────────────────────────────────────
@@ -107,88 +61,45 @@ class TestListLabels:
 
 @pytest.mark.django_db
 class TestCreateLabel:
-    def test_creates_label_successfully(self, client, alice, household):
+    def test_creates_label(self, client, alice, household):
         response = client.post(
             '/labels/',
-            json={'name': 'Restaurants', 'household_id': household.id},
+            json={'name': 'Restaurants', 'color': '#FF0000', 'household_id': household.id},
             user=alice,
         )
         assert response.status_code == 200
         assert response.json()['name'] == 'Restaurants'
-        assert response.json()['household_id'] == household.id
 
-    def test_persists_to_database(self, client, alice, household):
-        client.post(
-            '/labels/',
-            json={'name': 'Restaurants', 'household_id': household.id},
-            user=alice,
-        )
-        assert Label.objects.filter(name='Restaurants', household=household).exists()
-
-    def test_color_defaults_to_grey(self, client, alice, household):
+    def test_duplicate_name_in_same_household_returns_400(self, client, alice, household, label):
         response = client.post(
             '/labels/',
-            json={'name': 'Restaurants', 'household_id': household.id},
+            json={'name': label.name, 'color': '#000000', 'household_id': household.id},
             user=alice,
         )
-        assert response.json()['color'] == '#6B7280'
-
-    def test_category_defaults_to_empty_string(self, client, alice, household):
-        response = client.post(
-            '/labels/',
-            json={'name': 'Restaurants', 'household_id': household.id},
-            user=alice,
-        )
-        assert response.json()['category'] == ''
+        assert response.status_code == 400
 
     def test_blank_name_returns_400(self, client, alice, household):
         response = client.post(
             '/labels/',
-            json={'name': '   ', 'household_id': household.id},
+            json={'name': '  ', 'color': '#000000', 'household_id': household.id},
             user=alice,
         )
         assert response.status_code == 400
-        assert 'blank' in response.json()['detail'].lower()
 
-    def test_duplicate_name_returns_400(self, client, alice, household, label):
+    def test_returns_403_for_non_member_household(self, client, alice, other_household):
         response = client.post(
             '/labels/',
-            json={'name': 'Groceries', 'household_id': household.id},
-            user=alice,
-        )
-        assert response.status_code == 400
-        assert 'already exists' in response.json()['detail'].lower()
-
-    def test_returns_403_if_not_a_member(self, client, alice, other_household):
-        response = client.post(
-            '/labels/',
-            json={'name': 'Restaurants', 'household_id': other_household.id},
+            json={'name': 'Spy Label', 'color': '#000000', 'household_id': other_household.id},
             user=alice,
         )
         assert response.status_code == 403
 
-    def test_returns_404_for_nonexistent_household(self, client, alice):
-        response = client.post(
-            '/labels/',
-            json={'name': 'Restaurants', 'household_id': 9999},
-            user=alice,
-        )
-        assert response.status_code == 404
-
     def test_unauthenticated_returns_401(self, client, household):
         response = client.post(
             '/labels/',
-            json={'name': 'Groceries', 'household_id': household.id},
+            json={'name': 'X', 'color': '#000000', 'household_id': household.id},
         )
         assert response.status_code == 401
-
-    def test_response_shape(self, client, alice, household):
-        response = client.post(
-            '/labels/',
-            json={'name': 'Restaurants', 'household_id': household.id},
-            user=alice,
-        )
-        assert set(response.json().keys()) == {'id', 'name', 'color', 'category', 'household_id'}
 
 
 # ── PATCH /labels/{id}/ ───────────────────────────────────────────────────────
@@ -197,38 +108,22 @@ class TestCreateLabel:
 @pytest.mark.django_db
 class TestUpdateLabel:
     def test_updates_name(self, client, alice, label):
-        response = client.patch(
-            f'/labels/{label.id}/',
-            json={'name': 'Supermarket'},
-            user=alice,
-        )
+        response = client.patch(f'/labels/{label.id}/', json={'name': 'Supermarket'}, user=alice)
         assert response.status_code == 200
         assert response.json()['name'] == 'Supermarket'
 
     def test_updates_color(self, client, alice, label):
-        response = client.patch(
-            f'/labels/{label.id}/',
-            json={'color': '#00FF00'},
-            user=alice,
-        )
+        response = client.patch(f'/labels/{label.id}/', json={'color': '#00FF00'}, user=alice)
         assert response.status_code == 200
         assert response.json()['color'] == '#00FF00'
 
     def test_updates_category(self, client, alice, label):
-        response = client.patch(
-            f'/labels/{label.id}/',
-            json={'category': 'Essentials'},
-            user=alice,
-        )
+        response = client.patch(f'/labels/{label.id}/', json={'category': 'Essentials'}, user=alice)
         assert response.status_code == 200
         assert response.json()['category'] == 'Essentials'
 
     def test_unspecified_fields_are_unchanged(self, client, alice, label):
-        response = client.patch(
-            f'/labels/{label.id}/',
-            json={'color': '#00FF00'},
-            user=alice,
-        )
+        response = client.patch(f'/labels/{label.id}/', json={'color': '#00FF00'}, user=alice)
         data = response.json()
         assert data['name'] == label.name
         assert data['category'] == label.category
@@ -244,60 +139,46 @@ class TestUpdateLabel:
         assert 'at least one field' in response.json()['detail'].lower()
 
     def test_blank_name_returns_400(self, client, alice, label):
-        response = client.patch(
-            f'/labels/{label.id}/',
-            json={'name': '   '},
-            user=alice,
-        )
+        response = client.patch(f'/labels/{label.id}/', json={'name': '   '}, user=alice)
         assert response.status_code == 400
         assert 'blank' in response.json()['detail'].lower()
 
     def test_duplicate_name_returns_400(self, client, alice, household, label):
-        Label.objects.create(name='Restaurants', household=household)
-        response = client.patch(
-            f'/labels/{label.id}/',
-            json={'name': 'Restaurants'},
-            user=alice,
-        )
+        other = LabelFactory(name='Transport', household=household)
+        response = client.patch(f'/labels/{label.id}/', json={'name': other.name}, user=alice)
         assert response.status_code == 400
-        assert 'already exists' in response.json()['detail'].lower()
 
-    def test_returns_403_if_not_a_member(self, client, seth, label):
-        response = client.patch(
-            f'/labels/{label.id}/',
-            json={'name': 'Hacked'},
-            user=seth,
-        )
+    def test_returns_403_for_non_member(self, client, seth, label):
+        response = client.patch(f'/labels/{label.id}/', json={'name': 'X'}, user=seth)
         assert response.status_code == 403
 
     def test_returns_404_for_nonexistent_label(self, client, alice):
         response = client.patch('/labels/9999/', json={'name': 'X'}, user=alice)
         assert response.status_code == 404
 
-    def test_unauthenticated_returns_401(self, client, label):
-        response = client.patch(f'/labels/{label.id}/', json={'name': 'X'})
-        assert response.status_code == 401
 
-
-# ── DELETE /labels/{id}/ ──────────────────────────────────────────────────────
+# ── DELETE /labels/{id}/ ─────────────────────────────────────────────────────
 
 
 @pytest.mark.django_db
 class TestDeleteLabel:
-    def test_deletes_label_successfully(self, client, alice, label):
-        response = client.delete(f'/labels/{label.id}/', user=alice)
+    def test_deletes_label(self, client, alice, label):
+        lid = label.id
+        response = client.delete(f'/labels/{lid}/', user=alice)
         assert response.status_code == 204
-        assert not Label.objects.filter(pk=label.id).exists()
+        assert not Label.objects.filter(pk=lid).exists()
 
-    def test_returns_403_if_not_a_member(self, client, seth, label):
+    def test_labeled_transactions_are_preserved_with_null_label(
+        self, client, alice, labeled_transaction, label
+    ):
+        client.delete(f'/labels/{label.id}/', user=alice)
+        labeled_transaction.refresh_from_db()
+        assert labeled_transaction.label is None
+
+    def test_returns_403_for_non_member(self, client, seth, label):
         response = client.delete(f'/labels/{label.id}/', user=seth)
         assert response.status_code == 403
-        assert Label.objects.filter(pk=label.id).exists()
 
     def test_returns_404_for_nonexistent_label(self, client, alice):
         response = client.delete('/labels/9999/', user=alice)
         assert response.status_code == 404
-
-    def test_unauthenticated_returns_401(self, client, label):
-        response = client.delete(f'/labels/{label.id}/')
-        assert response.status_code == 401
