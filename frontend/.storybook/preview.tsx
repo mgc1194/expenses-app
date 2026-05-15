@@ -1,4 +1,4 @@
-import type { Preview } from '@storybook/react';
+import type { Preview } from '@storybook/react-vite';
 
 import { authDecorator, routerDecorator, themeDecorator } from './decorators';
 
@@ -14,7 +14,7 @@ const preview: Preview = {
       },
     },
     a11y: {
-      element: '#storybook-root',
+      context: '#storybook-root',
     },
   },
 };
