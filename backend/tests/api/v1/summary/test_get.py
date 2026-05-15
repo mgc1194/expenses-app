@@ -1,112 +1,22 @@
 """
-tests/api/v1/test_summary.py — Integration tests for GET /api/v1/summary/.
+tests/api/v1/summary/test_get.py — Integration tests for GET /api/v1/summary/.
 
-Note: this module defines its own bank/account_type fixtures because the
-summary tests use a standalone fake bank ("Test Bank") to avoid coupling
-to migration state. Everything else uses factories.
+Covers: access control, aggregation, month filter, exclude_from_summary filter,
+and earliest_transaction_date.
+
+summary/conftest.py provides: user, other_user, account, food_label,
+income_label, transport_label, earnings_label, no_category_label, auth_client,
+and the _tx() helper.
+Root conftest provides: household, other_household, account_type.
 """
 
 import pytest
 from django.test import Client
 
-from tests.factories import AccountFactory, HouseholdFactory, LabelFactory, UserFactory
-from transactions.models import AccountType, Bank, Transaction
+from tests.api.v1.summary.conftest import _tx
+from tests.factories import AccountFactory, LabelFactory
 
-# ── Module-local fixtures ─────────────────────────────────────────────────────
-
-
-@pytest.fixture
-def household(db):
-    return HouseholdFactory(name='Test Household')
-
-
-@pytest.fixture
-def other_household(db):
-    return HouseholdFactory(name='Other Household')
-
-
-@pytest.fixture
-def user(db, household):
-    u = UserFactory(email='test@example.com', username='test@example.com')
-    u.set_password('Password1!')
-    u.save()
-    u.households.add(household)
-    return u
-
-
-@pytest.fixture
-def other_user(db, other_household):
-    u = UserFactory(email='other@example.com', username='other@example.com')
-    u.set_password('Password1!')
-    u.save()
-    u.households.add(other_household)
-    return u
-
-
-@pytest.fixture
-def bank(db):
-    return Bank.objects.create(name='Test Bank')
-
-
-@pytest.fixture
-def account_type(db, bank):
-    return AccountType.objects.create(
-        name='Savings',
-        handler_key='test_savings',
-        bank=bank,
-    )
-
-
-@pytest.fixture
-def account(db, account_type, household):
-    return AccountFactory(name='Test Savings', account_type=account_type, household=household)
-
-
-@pytest.fixture
-def food_label(db, household):
-    return LabelFactory(name='Groceries', color='#16a34a', category='Food', household=household)
-
-
-@pytest.fixture
-def income_label(db, household):
-    return LabelFactory(name='Income', color='#036628', category='Income', household=household)
-
-
-@pytest.fixture
-def transport_label(db, household):
-    return LabelFactory(name='Gas', color='#2563eb', category='Transport', household=household)
-
-
-@pytest.fixture
-def earnings_label(db, household):
-    return LabelFactory(name='Paycheck', color='#059669', category='Earnings', household=household)
-
-
-@pytest.fixture
-def no_category_label(db, household):
-    return LabelFactory(name='Miscellaneous', color='#6B7280', category='', household=household)
-
-
-@pytest.fixture
-def auth_client(db, user):
-    client = Client()
-    client.force_login(user)
-    return client
-
-
-def _tx(account, amount, label=None, date='2026-03-15', concept='TEST', suffix=''):
-    """Lightweight helper for creating summary-test transactions."""
-    return Transaction.objects.create(
-        dedupe_hash=f'hash_{amount}_{label}_{date}_{suffix}',
-        date=date,
-        concept=concept,
-        amount=amount,
-        account=account,
-        label=label,
-    )
-
-
-# ── Basic behaviour ───────────────────────────────────────────────────────────
+# ── Basic access ──────────────────────────────────────────────────────────────
 
 
 @pytest.mark.django_db
@@ -201,3 +111,63 @@ class TestSummaryAggregation:
         _tx(account, -20.00, food_label, date='2026-03-15', suffix='mar')
         data = auth_client.get(f'/api/v1/summary/?household_id={household.id}&month=2026-03').json()
         assert data['total'] == pytest.approx(-20.00)
+
+
+# ── exclude_from_summary filter ───────────────────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestSummaryExcludeFilter:
+    def test_excluded_transaction_omitted_from_total(
+        self, auth_client, account, household, food_label
+    ):
+        from transactions.models import Transaction
+
+        tx = _tx(account, -50.00, food_label)
+        Transaction.objects.filter(pk=tx.pk).update(exclude_from_summary=True)
+        data = auth_client.get(f'/api/v1/summary/?household_id={household.id}').json()
+        assert data['total'] == 0.0
+        assert data['spending'] == []
+
+    def test_excluded_transaction_not_in_uncategorised(self, auth_client, account, household):
+        from transactions.models import Transaction
+
+        tx = _tx(account, -25.00)
+        Transaction.objects.filter(pk=tx.pk).update(exclude_from_summary=True)
+        data = auth_client.get(f'/api/v1/summary/?household_id={household.id}').json()
+        assert data['uncategorised_total'] == 0.0
+
+
+# ── earliest_transaction_date ─────────────────────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestEarliestTransactionDate:
+    def test_returns_none_when_no_transactions(self, auth_client, household):
+        data = auth_client.get(f'/api/v1/summary/?household_id={household.id}').json()
+        assert data['earliest_transaction_date'] is None
+
+    def test_returns_date_of_oldest_transaction(self, auth_client, account, household, food_label):
+        _tx(account, -10.00, food_label, date='2025-06-01', suffix='old')
+        _tx(account, -20.00, food_label, date='2026-03-01', suffix='new')
+        data = auth_client.get(f'/api/v1/summary/?household_id={household.id}').json()
+        assert data['earliest_transaction_date'] == '2025-06-01'
+
+    def test_earliest_date_unaffected_by_month_filter(
+        self, auth_client, account, household, food_label
+    ):
+        _tx(account, -10.00, food_label, date='2025-06-01', suffix='old')
+        _tx(account, -20.00, food_label, date='2026-03-01', suffix='new')
+        # Filter to March 2026 only — earliest date should still reflect 2025-06-01
+        data = auth_client.get(f'/api/v1/summary/?household_id={household.id}&month=2026-03').json()
+        assert data['earliest_transaction_date'] == '2025-06-01'
+
+    def test_excluded_transactions_still_count_toward_earliest(
+        self, auth_client, account, household, food_label
+    ):
+        from transactions.models import Transaction
+
+        tx = _tx(account, -50.00, food_label, date='2024-01-01', suffix='excluded')
+        Transaction.objects.filter(pk=tx.pk).update(exclude_from_summary=True)
+        data = auth_client.get(f'/api/v1/summary/?household_id={household.id}').json()
+        assert data['earliest_transaction_date'] == '2024-01-01'
