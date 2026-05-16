@@ -6,9 +6,18 @@
 
 import { API_V1 } from '@serve/config';
 
-function getCsrfToken(): string {
+let cachedCsrfToken: string | null = null;
+
+async function getCsrfToken(): Promise<string> {
   const match = document.cookie.match(/csrftoken=([^;]+)/);
-  return match ? match[1] : '';
+  if (match) return match[1];
+  if (cachedCsrfToken) return cachedCsrfToken;
+  const res = await fetch(`${import.meta.env.VITE_API_BASE ?? ''}/api/v1/csrf/`, {
+    credentials: 'include',
+  });
+  const data = await res.json();
+  cachedCsrfToken = data.csrfToken;
+  return cachedCsrfToken!;
 }
 
 export class ApiError extends Error {
@@ -33,12 +42,13 @@ const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const method = (options.method ?? 'GET').toUpperCase();
+  const csrfToken = MUTATING_METHODS.has(method) ? await getCsrfToken() : '';
 
   const response = await fetch(`${API_V1}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      ...(MUTATING_METHODS.has(method) ? { 'X-CSRFToken': getCsrfToken() } : {}),
+      ...(MUTATING_METHODS.has(method) ? { 'X-CSRFToken': csrfToken } : {}),
       ...options.headers,
     },
     credentials: 'include',

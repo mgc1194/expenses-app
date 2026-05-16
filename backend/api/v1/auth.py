@@ -173,6 +173,13 @@ def auth_me(request):
     return _serialize_user(user)
 
 
+@router.get('/csrf/')
+def get_csrf_token(request):
+    from django.middleware.csrf import get_token
+
+    return {'csrfToken': get_token(request)}
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
