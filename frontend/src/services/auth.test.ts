@@ -18,7 +18,14 @@ function mockResponse(body: unknown, status = 200) {
   } as Response);
 }
 
-beforeEach(() => mockFetch.mockReset());
+beforeEach(() => {
+  mockFetch.mockReset()
+  Object.defineProperty(document, 'cookie', {
+    writable: true,
+    configurable: true,
+    value: 'csrftoken=test-csrf-token',
+  });
+});
 
 describe('login', () => {
   it('calls POST /api/v1/auth/login with credentials', async () => {

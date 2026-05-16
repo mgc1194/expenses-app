@@ -1,12 +1,13 @@
 import '@testing-library/jest-dom';
 import { server } from '@tests/utils/msw';
-import { afterAll, afterEach, beforeAll } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest';
 
-
-Object.defineProperty(document, 'cookie', {
-  writable: true,
-  configurable: true,
-  value: 'csrftoken=test-csrf-token',
+beforeEach(() => {
+  Object.defineProperty(document, 'cookie', {
+    writable: true,
+    configurable: true,
+    value: 'csrftoken=test-csrf-token',
+  });
 });
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));

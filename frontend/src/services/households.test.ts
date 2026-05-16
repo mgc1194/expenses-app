@@ -3,7 +3,7 @@
 // apiFetch, CSRF, and ApiError behaviour is covered in api-client.test.ts.
 // These tests focus on the correct HTTP method, URL, and error propagation
 // for each household endpoint.
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   addMember,
@@ -29,6 +29,14 @@ const household = {
   updated_at: '2026-01-01T00:00:00Z',
   members: [],
 };
+
+beforeEach(() => {
+  Object.defineProperty(document, 'cookie', {
+    writable: true,
+    configurable: true,
+    value: 'csrftoken=test-csrf-token',
+  });
+});
 
 afterEach(() => vi.restoreAllMocks());
 
