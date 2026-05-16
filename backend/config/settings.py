@@ -156,13 +156,14 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
+# Static files
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-STATICFILES_DIRS = [BASE_DIR.parent / 'frontend' / 'dist']
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+FRONTEND_DIST = BASE_DIR.parent / 'frontend' / 'dist'
 
-TEMPLATES[0]['DIRS'] = [BASE_DIR.parent / 'frontend' / 'dist']
+STATICFILES_DIRS = [FRONTEND_DIST] if FRONTEND_DIST.exists() else []
+TEMPLATES[0]['DIRS'] = [FRONTEND_DIST] if FRONTEND_DIST.exists() else []
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
