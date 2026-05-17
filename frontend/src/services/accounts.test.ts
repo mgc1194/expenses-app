@@ -1,6 +1,6 @@
 // services/accounts.test.ts — Unit tests for account service endpoints.
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   createAccount,
@@ -32,14 +32,6 @@ const account = {
   created_at: '2026-01-01T00:00:00Z',
   updated_at: '2026-01-01T00:00:00Z',
 };
-
-beforeEach(() => {
-  Object.defineProperty(document, 'cookie', {
-    writable: true,
-    configurable: true,
-    value: 'csrftoken=test-csrf-token',
-  });
-});
 
 afterEach(() => vi.restoreAllMocks());
 
