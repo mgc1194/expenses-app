@@ -1,4 +1,4 @@
-# Core dependencies for Expenses App
+# Core dependencies for SERVE App
 pandas>=3.0.2
 mysql-connector-python>=9.6.0
 gspread>=6.2.1

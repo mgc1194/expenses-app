@@ -184,9 +184,13 @@ CSRF_TRUSTED_ORIGINS = [
     if origin.strip()
 ]
 
+# Cookie settings
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+
 CSRF_COOKIE_SAMESITE = 'Lax'
-CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SAMESITE = 'Lax'
-SESSION_COOKIE_SECURE = True
-SESSION_COOKIE_DOMAIN = '.servebudget.com'
-CSRF_COOKIE_DOMAIN = '.servebudget.com'
+
+if not DEBUG:
+    CSRF_COOKIE_DOMAIN = '.servebudget.com'
+    SESSION_COOKIE_DOMAIN = '.servebudget.com'
