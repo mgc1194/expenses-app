@@ -160,11 +160,6 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-FRONTEND_DIST = BASE_DIR.parent / 'frontend' / 'dist'
-
-STATICFILES_DIRS = [FRONTEND_DIST] if FRONTEND_DIST.exists() else []
-TEMPLATES[0]['DIRS'] = [FRONTEND_DIST] if FRONTEND_DIST.exists() else []
-
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -189,7 +184,9 @@ CSRF_TRUSTED_ORIGINS = [
     if origin.strip()
 ]
 
-CSRF_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_DOMAIN = '.servebudget.com'
+CSRF_COOKIE_DOMAIN = '.servebudget.com'
