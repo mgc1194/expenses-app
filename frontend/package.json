@@ -50,7 +50,7 @@
     "eslint-plugin-storybook": "^10.4.0",
     "globals": "^17.6.0",
     "happy-dom": "^20.9.0",
-    "lint-staged": "^16.4.0",
+    "lint-staged": "^17.0.5",
     "msw": "^2.14.6",
     "playwright": "^1.60.0",
     "storybook": "^10.4.0",
