@@ -1,6 +1,6 @@
 # Core dependencies for SERVE App
 pandas>=3.0.2
-mysql-connector-python>=9.6.0
+mysql-connector-python>=9.7.0
 gspread>=6.2.1
 google-auth>=2.53.0
 python-dotenv>=1.2.2
