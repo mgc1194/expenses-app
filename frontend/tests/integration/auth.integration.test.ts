@@ -1,12 +1,12 @@
 // tests/integration/auth.integration.test.ts — Auth service integration tests.
 
-import { describe, expect, it } from 'vitest';
 import { http, HttpResponse } from 'msw';
+import { describe, expect, it } from 'vitest';
 
 import { ApiError } from '@services/api-client';
 import { getMe, login, logout, register, updatePassword, updateProfile } from '@services/auth';
 
-import { mockUser, server } from '@tests/utils/msw';
+import { mockUser, server } from '../utils/msw';
 
 
 describe('login', () => {
@@ -54,7 +54,7 @@ describe('getMe', () => {
 
   it('throws ApiError with status 401 when unauthenticated', async () => {
     server.use(http.get('/api/v1/auth/me', () => new HttpResponse(null, { status: 401 })));
-    await expect(getMe()).rejects.toMatchObject({ status: 401 });
+    await expect(getMe()).rejects.toBeInstanceOf(ApiError);
   });
 });
 

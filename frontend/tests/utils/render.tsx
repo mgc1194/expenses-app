@@ -12,8 +12,8 @@ import type { RenderOptions, RenderResult } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { BrowserRouter } from 'react-router';
 
-import theme from '../../src/theme';
 import { AuthProvider } from '../../src/context/auth-context';
+import theme from '../../src/theme';
 
 function makeQueryClient() {
   return new QueryClient({
