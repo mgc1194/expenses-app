@@ -60,6 +60,7 @@
     "vitest": "^3.0.0"
   },
   "lint-staged": {
-    "src/**/*.{ts,tsx}": "eslint --max-warnings=0"
+    "src/**/*.{ts,tsx}": "eslint --max-warnings=0",
+    "tests/**/*.{ts,tsx}": "eslint --max-warnings=0"
   }
 }

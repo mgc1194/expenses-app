@@ -1,8 +1,8 @@
 // tests/factories/auth.ts — Factory for User.
 
-import { makeHousehold } from '@test/factories/households';
-
 import type { User } from '@serve/types/global';
+import { makeHousehold } from '@tests/factories/households';
+
 
 
 export function makeUser(overrides: Partial<User> = {}): User {
