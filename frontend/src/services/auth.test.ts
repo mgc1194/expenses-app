@@ -35,7 +35,6 @@ describe('login', () => {
 
   it('throws ApiError on 401', async () => {
     mockFetch.mockReturnValueOnce(mockResponse({ detail: 'Invalid credentials' }, 401));
-
     await expect(login({ email: 'a@b.com', password: 'wrong' }))
       .rejects.toMatchObject({ status: 401, message: 'Invalid credentials' });
   });
@@ -44,7 +43,6 @@ describe('login', () => {
 describe('register', () => {
   it('calls POST /api/v1/auth/register', async () => {
     mockFetch.mockReturnValueOnce(mockResponse({ id: 2 }, 201));
-
     await register({ email: 'new@b.com', password: 'Password1!', confirm_password: 'Password1!' });
     expect(mockFetch).toHaveBeenCalledWith(
       '/api/v1/auth/register',
@@ -78,7 +76,6 @@ describe('getMe', () => {
 
   it('throws ApiError on 401', async () => {
     mockFetch.mockReturnValueOnce(mockResponse({}, 401));
-
     await expect(getMe()).rejects.toMatchObject({ status: 401 });
   });
 });

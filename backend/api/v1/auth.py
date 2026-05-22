@@ -264,7 +264,7 @@ def auth_update_profile(request, payload: UpdateProfileRequest):
     return _serialize_user(user)
 
 
-@router.post('/auth/me/password', auth=django_auth, response=MessageResponse)
+@router.post('/auth/me/password', auth=django_auth, response={204: None})
 def auth_update_password(request, payload: UpdatePasswordRequest):
     """Changes the current user's password.
 
@@ -276,7 +276,7 @@ def auth_update_password(request, payload: UpdatePasswordRequest):
         payload: Current password, new password, and confirmation.
 
     Returns:
-        A MessageResponse confirming the password was changed.
+        None — 204 No Content on success.
 
     Raises:
         HttpError: 400 if current_password is wrong, passwords don't match,
@@ -303,7 +303,7 @@ def auth_update_password(request, payload: UpdatePasswordRequest):
     update_session_auth_hash(request, user)
     logger.info(f'User {user.pk} changed their password.')
 
-    return MessageResponse(message='Password updated successfully.')
+    return 204, None
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

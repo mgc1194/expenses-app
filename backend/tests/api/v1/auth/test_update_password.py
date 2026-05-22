@@ -36,7 +36,7 @@ class TestUpdatePassword:
 
     # ── Success ───────────────────────────────────────────────────────────────
 
-    def test_successful_password_change_returns_200(self, client, registered_user, valid_payload):
+    def test_successful_password_change_returns_204(self, client, registered_user, valid_payload):
         response = client.post(
             '/auth/me/password',
             json={
@@ -46,8 +46,7 @@ class TestUpdatePassword:
             },
             user=registered_user,
         )
-        assert response.status_code == 200
-        assert response.json()['message'] == 'Password updated successfully.'
+        assert response.status_code == 204
 
     def test_password_is_changed_in_database(self, client, registered_user, valid_payload):
         client.post(
