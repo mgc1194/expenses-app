@@ -1,11 +1,12 @@
 """
-api/v1/users.py — v1 authentication endpoints.
+api/v1/auth.py — v1 authentication endpoints.
 
 Endpoints:
-    POST /api/v1/auth/register — create a new user account
-    POST /api/v1/auth/login    — authenticate with email + password, start a session
-    POST /api/v1/auth/logout   — invalidate the current session
-    GET  /api/v1/auth/me       — return the current authenticated user
+    POST  /api/v1/auth/register — create a new user account
+    POST  /api/v1/auth/login    — authenticate with email + password, start a session
+    POST  /api/v1/auth/logout   — invalidate the current session
+    GET   /api/v1/auth/me       — return the current authenticated user
+    PATCH /api/v1/auth/me       — update the current user's profile fields
 """
 
 import logging
@@ -13,19 +14,28 @@ import secrets
 
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from ninja import Router
 from ninja.errors import HttpError
 from ninja.security import django_auth
 
-from schemas.auth import LoginRequest, MessageResponse, RegisterRequest, UserSchema
+from schemas.auth import (
+    LoginRequest,
+    MessageResponse,
+    RegisterRequest,
+    UpdateProfileRequest,
+    UserSchema,
+)
 from users.models import CustomUser
 from users.validators import validate_email_format
 
 logger = logging.getLogger(__name__)
 
 router = Router(tags=['Auth'])
+
+_username_validator = UnicodeUsernameValidator()
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -170,6 +180,81 @@ def auth_me(request):
         A UserSchema representing the current user.
     """
     user = CustomUser.objects.prefetch_related('households').get(pk=request.user.pk)
+    return _serialize_user(user)
+
+
+@router.patch('/auth/me', auth=django_auth, response=UserSchema)
+def auth_update_profile(request, payload: UpdateProfileRequest):
+    """Updates the current user's profile fields.
+
+    All fields are optional — only fields explicitly included in the request
+    body are updated. An empty payload is a valid no-op and returns the
+    current user unchanged.
+
+    Validation rules:
+    - first_name / last_name: blank strings are rejected.
+    - email: normalised to lowercase, format-validated, must be unique
+      excluding the current user.
+    - username: must satisfy Django's UnicodeUsernameValidator, max 150
+      chars, and be unique excluding the current user.
+
+    Args:
+        request: The HTTP request object. Must be authenticated.
+        payload: Partial profile update fields.
+
+    Returns:
+        A UserSchema representing the updated user.
+
+    Raises:
+        HttpError: 400 for blank values, invalid formats, or uniqueness
+            violations.
+    """
+    user: CustomUser = request.user
+    update_fields: list[str] = []
+
+    if payload.first_name is not None:
+        if not payload.first_name.strip():
+            raise HttpError(400, 'First name cannot be blank.')
+        user.first_name = payload.first_name
+        update_fields.append('first_name')
+
+    if payload.last_name is not None:
+        if not payload.last_name.strip():
+            raise HttpError(400, 'Last name cannot be blank.')
+        user.last_name = payload.last_name
+        update_fields.append('last_name')
+
+    if payload.email is not None:
+        if not payload.email.strip():
+            raise HttpError(400, 'Email cannot be blank.')
+        if email_error := validate_email_format(payload.email):
+            raise HttpError(400, email_error)
+        email = payload.email.lower()
+        if CustomUser.objects.filter(email=email).exclude(pk=user.pk).exists():
+            raise HttpError(400, 'An account with this email already exists.')
+        user.email = email
+        update_fields.append('email')
+
+    if payload.username is not None:
+        if not payload.username.strip():
+            raise HttpError(400, 'Username cannot be blank.')
+        if len(payload.username) > 150:
+            raise HttpError(400, 'Username must be 150 characters or fewer.')
+        try:
+            _username_validator(payload.username)
+        except ValidationError as e:
+            raise HttpError(400, ' '.join(e.messages)) from None
+        if CustomUser.objects.filter(username=payload.username).exclude(pk=user.pk).exists():
+            raise HttpError(400, 'This username is already taken.')
+        user.username = payload.username
+        update_fields.append('username')
+
+    if update_fields:
+        user.save(update_fields=update_fields)
+        logger.info(f'User {user.pk} updated profile fields: {update_fields}.')
+
+    user.refresh_from_db()
+    user = CustomUser.objects.prefetch_related('households').get(pk=user.pk)
     return _serialize_user(user)
 
 
