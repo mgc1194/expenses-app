@@ -149,13 +149,58 @@ class TestUpdateProfile:
 
     # ── Concurrent update race ─────────────────────────────────────────────────
 
-    def test_integrity_error_on_save_returns_400_not_500(self, client, registered_user, mocker):
-        # Simulate a concurrent duplicate slipping past the uniqueness check.
+    def test_concurrent_duplicate_email_returns_specific_400(
+        self, client, registered_user, db, mocker
+    ):
+        # Another user claims the email between our exists() check and save().
+        # Patch only CustomUser.save in the auth module so other.save() inside
+        # the side-effect is not intercepted (avoids infinite recursion).
+        other = CustomUser.objects.create_user(
+            username='other', email='race@example.com', password='Password1!'
+        )
+        from django.db import IntegrityError
+
+        def _steal_then_fail(*args, **kwargs):
+            CustomUser.objects.filter(pk=other.pk).update(email='race@example.com')
+            raise IntegrityError('Duplicate entry')
+
+        mocker.patch('api.v1.auth.CustomUser.save', side_effect=_steal_then_fail)
+        response = client.patch(
+            '/auth/me', json={'email': 'race@example.com'}, user=registered_user
+        )
+        assert response.status_code == 400
+        assert 'email already exists' in response.json()['detail'].lower()
+
+    def test_concurrent_duplicate_username_returns_specific_400(
+        self, client, registered_user, db, mocker
+    ):
+        # Another user claims the username between our exists() check and save().
+        # Patch only CustomUser.save in the auth module so other.save() inside
+        # the side-effect is not intercepted (avoids infinite recursion).
+        other = CustomUser.objects.create_user(
+            username='other', email='other3@example.com', password='Password1!'
+        )
+        from django.db import IntegrityError
+
+        def _steal_then_fail(*args, **kwargs):
+            CustomUser.objects.filter(pk=other.pk).update(username='racename')
+            raise IntegrityError('Duplicate entry')
+
+        mocker.patch('api.v1.auth.CustomUser.save', side_effect=_steal_then_fail)
+        response = client.patch('/auth/me', json={'username': 'racename'}, user=registered_user)
+        assert response.status_code == 400
+        assert 'username is already taken' in response.json()['detail'].lower()
+
+    def test_unidentified_integrity_error_returns_generic_400(
+        self, client, registered_user, mocker
+    ):
+        # IntegrityError on a non-email/username field falls back to the generic message.
         from django.db import IntegrityError
 
         mocker.patch(
-            'django.db.models.base.Model.save',
-            side_effect=IntegrityError('Duplicate entry'),
+            'api.v1.auth.CustomUser.save',
+            side_effect=IntegrityError('Duplicate entry on unknown column'),
         )
-        response = client.patch('/auth/me', json={'username': 'anynewname'}, user=registered_user)
+        response = client.patch('/auth/me', json={'first_name': 'Test'}, user=registered_user)
         assert response.status_code == 400
+        assert 'conflicting value' in response.json()['detail'].lower()
