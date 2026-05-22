@@ -35,6 +35,10 @@ export function SettingsPage() {
         email,
       });
       setUser(updated);
+      setFirstName(updated.first_name);
+      setLastName(updated.last_name);
+      setUsername(updated.username);
+      setEmail(updated.email);
       setSuccessMessage('Profile updated successfully.');
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : 'Something went wrong.');

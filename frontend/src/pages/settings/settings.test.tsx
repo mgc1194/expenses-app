@@ -155,6 +155,23 @@ describe('SettingsPage profile save — success', () => {
     );
   });
 
+  it('syncs form fields from the API response after save (e.g. lowercased email)', async () => {
+    const updatedUser = { ...mockUser, email: 'normalized@example.com', username: 'synceduser' };
+    mockUpdateProfile.mockResolvedValueOnce(updatedUser);
+    setup();
+
+    fireEvent.change(screen.getByLabelText(/email address/i), { target: { value: 'NORMALIZED@EXAMPLE.COM' } });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
+    });
+
+    await waitFor(() => {
+      const emailInput = screen.getByLabelText(/email address/i) as HTMLInputElement;
+      expect(emailInput.value).toBe('normalized@example.com');
+    });
+  });
+
   it('does not navigate away after saving', async () => {
     mockUpdateProfile.mockResolvedValueOnce(mockUser);
     setup();

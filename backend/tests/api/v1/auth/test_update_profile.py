@@ -146,3 +146,16 @@ class TestUpdateProfile:
         client.patch('/auth/me', json={'first_name': 'Persisted'}, user=registered_user)
         registered_user.refresh_from_db()
         assert registered_user.first_name == 'Persisted'
+
+    # ── Concurrent update race ─────────────────────────────────────────────────
+
+    def test_integrity_error_on_save_returns_400_not_500(self, client, registered_user, mocker):
+        # Simulate a concurrent duplicate slipping past the uniqueness check.
+        from django.db import IntegrityError
+
+        mocker.patch(
+            'django.db.models.base.Model.save',
+            side_effect=IntegrityError('Duplicate entry'),
+        )
+        response = client.patch('/auth/me', json={'username': 'anynewname'}, user=registered_user)
+        assert response.status_code == 400

@@ -250,7 +250,16 @@ def auth_update_profile(request, payload: UpdateProfileRequest):
         update_fields.append('username')
 
     if update_fields:
-        user.save(update_fields=update_fields)
+        try:
+            user.save(update_fields=update_fields)
+        except IntegrityError:
+            # A concurrent request inserted the same email or username between
+            # our uniqueness check and the save. Map to a 400 rather than 500.
+            # We can't always tell which field conflicted, so we return a
+            # generic message; the pre-save checks above handle the clear cases.
+            raise HttpError(
+                400, 'A duplicate email or username was submitted. Please try again.'
+            ) from None
         logger.info(f'User {user.pk} updated profile fields: {update_fields}.')
 
     user.refresh_from_db()
