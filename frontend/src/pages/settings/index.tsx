@@ -1,17 +1,51 @@
-// pages/settings/index.tsx — User settings page shell.
-//
-// Hosts profile, password, and subscription management sections.
-// Section content is populated in follow-up issues; this file
-// establishes the layout, route entry point, and empty placeholders.
+// pages/settings/index.tsx — User settings page.
 
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { Box, Button, Container, Divider, Paper, Typography } from '@mui/material';
+import { Alert, Box, Button, Container, Divider, Paper, TextField, Typography } from '@mui/material';
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
 
+import { useAuth } from '@context/auth-context';
 import { AppHeader } from '@layout/app-header';
+import { updateProfile } from '@services/auth';
 
 export function SettingsPage() {
   const navigate = useNavigate();
+  const { user, setUser } = useAuth();
+
+  const [firstName, setFirstName] = useState(user?.first_name ?? '');
+  const [lastName, setLastName] = useState(user?.last_name ?? '');
+  const [username, setUsername] = useState(user?.username ?? '');
+  const [email, setEmail] = useState(user?.email ?? '');
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  async function handleSaveProfile() {
+    setSuccessMessage(null);
+    setErrorMessage(null);
+    setIsSubmitting(true);
+
+    try {
+      const updated = await updateProfile({
+        first_name: firstName,
+        last_name: lastName,
+        username,
+        email,
+      });
+      setUser(updated);
+      setFirstName(updated.first_name);
+      setLastName(updated.last_name);
+      setUsername(updated.username);
+      setEmail(updated.email);
+      setSuccessMessage('Profile updated successfully.');
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Something went wrong.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
@@ -35,13 +69,70 @@ export function SettingsPage() {
         </Typography>
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          {/* Profile — populated in Issue 2 */}
+
+          {/* Profile */}
           <Paper variant="outlined" sx={{ p: 3 }}>
             <Typography variant="h6" sx={{ mb: 0.5 }}>
               Profile
             </Typography>
-            <Divider sx={{ mb: 2 }} />
-            {/* TODO: name, username, and email editing (Issue 2) */}
+            <Divider sx={{ mb: 3 }} />
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                <TextField
+                  id="firstName"
+                  label="First name"
+                  autoComplete="given-name"
+                  fullWidth
+                  value={firstName}
+                  onChange={e => setFirstName(e.target.value)}
+                />
+                <TextField
+                  id="lastName"
+                  label="Last name"
+                  autoComplete="family-name"
+                  fullWidth
+                  value={lastName}
+                  onChange={e => setLastName(e.target.value)}
+                />
+              </Box>
+
+              <TextField
+                id="username"
+                label="Username"
+                autoComplete="username"
+                fullWidth
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+              />
+
+              <TextField
+                id="email"
+                label="Email address"
+                type="email"
+                autoComplete="email"
+                fullWidth
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+              />
+
+              {successMessage && (
+                <Alert severity="success">{successMessage}</Alert>
+              )}
+              {errorMessage && (
+                <Alert severity="error">{errorMessage}</Alert>
+              )}
+
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <Button
+                  variant="contained"
+                  onClick={handleSaveProfile}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Saving…' : 'Save'}
+                </Button>
+              </Box>
+            </Box>
           </Paper>
 
           {/* Password — populated in Issue 3 */}
@@ -61,6 +152,7 @@ export function SettingsPage() {
             <Divider sx={{ mb: 2 }} />
             {/* TODO: subscription plan display (Issue 4) */}
           </Paper>
+
         </Box>
       </Container>
     </Box>

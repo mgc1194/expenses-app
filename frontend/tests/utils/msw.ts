@@ -95,6 +95,11 @@ export const handlers = [
     return new HttpResponse(null, { status: 204 });
   }),
 
+  http.patch(`${API}/auth/me`, async ({ request }) => {
+    const body = await request.json() as Record<string, string>;
+    return HttpResponse.json({ ...mockUser, ...body });
+  }),
+
   // ── Households ──────────────────────────────────────────────────────────────
 
   http.get(`${API}/households/`, () => HttpResponse.json([mockDetailedHousehold])),
@@ -117,96 +122,15 @@ export const handlers = [
 
   http.post(`${API}/households/:id/members/`, async ({ params, request }) => {
     const body = await request.json() as { email: string };
-    const newMember = { id: 99, email: body.email, first_name: 'New', last_name: 'Member' };
     return HttpResponse.json({
       ...mockDetailedHousehold,
       id: Number(params.id),
-      members: [...mockDetailedHousehold.members, newMember],
+      members: [
+        ...mockDetailedHousehold.members,
+        { id: 99, email: body.email, first_name: '', last_name: '' },
+      ],
     });
   }),
-
-  // ── Accounts ────────────────────────────────────────────────────────────────
-
-  http.get(`${API}/accounts/`, () => HttpResponse.json([mockAccount])),
-
-  http.post(`${API}/accounts/`, async ({ request }) => {
-    const body = await request.json() as { household_id: number; account_type_id: number; name: string };
-    const name = body.name.trim();
-    const normalized = name.charAt(0).toUpperCase() + name.slice(1);
-    return HttpResponse.json({ ...mockAccount, id: 99, name: normalized });
-  }),
-
-  http.patch(`${API}/accounts/:id/`, async ({ params, request }) => {
-    const body = await request.json() as { name: string };
-    const name = body.name.trim();
-    const normalized = name.charAt(0).toUpperCase() + name.slice(1);
-    return HttpResponse.json({ ...mockAccount, id: Number(params.id), name: normalized });
-  }),
-
-  http.delete(`${API}/accounts/:id/`, () => new HttpResponse(null, { status: 204 })),
-
-  // ── Labels ──────────────────────────────────────────────────────────────────
-
-  http.get(`${API}/labels/`, ({ request }) => {
-    const url = new URL(request.url);
-    const householdId = url.searchParams.get('household_id');
-    if (!householdId) {
-      return HttpResponse.json(
-        { detail: 'household_id query parameter is required.' },
-        { status: 400 },
-      );
-    }
-    return HttpResponse.json([mockLabel]);
-  }),
-
-  http.post(`${API}/labels/`, async ({ request }) => {
-    const body = await request.json() as {
-      name: string;
-      color: string;
-      category: string;
-      household_id: number;
-    };
-    return HttpResponse.json({
-      id: 99,
-      name: body.name,
-      color: body.color,
-      category: body.category,
-      household_id: body.household_id,
-    });
-  }),
-
-  http.patch(`${API}/labels/:id/`, async ({ params, request }) => {
-    const body = await request.json() as Partial<{ name: string; color: string; category: string }>;
-    return HttpResponse.json({
-      ...mockLabel,
-      id: Number(params.id),
-      ...body,
-    });
-  }),
-
-  http.delete(`${API}/labels/:id/`, () => new HttpResponse(null, { status: 204 })),
-
-  // ── Transactions ─────────────────────────────────────────────────────────────
-
-  http.get(`${API}/transactions/`, () => HttpResponse.json([mockTransaction])),
-
-  http.patch(`${API}/transactions/:id/`, async ({ params, request }) => {
-    const body = await request.json() as Partial<{ concept: string; label_id: number | null }>;
-
-    const labelPatch = 'label_id' in body
-      ? body.label_id === null
-        ? { label_id: null, label_name: null, label_color: null }
-        : { label_id: body.label_id, label_name: mockLabel.name, label_color: mockLabel.color }
-      : {};
-
-    return HttpResponse.json({
-      ...mockTransaction,
-      id: Number(params.id),
-      ...(body.concept !== undefined ? { concept: body.concept } : {}),
-      ...labelPatch,
-    });
-  }),
-
 ];
 
 export const server = setupServer(...handlers);

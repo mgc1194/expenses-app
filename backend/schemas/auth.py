@@ -1,5 +1,5 @@
 """
-schemas/users.py — API schemas for user-related endpoints.
+schemas/auth.py — API schemas for authentication endpoints.
 
 Schemas define the API contract independently from the database models.
 Fields that are internal to the database (e.g. password hashes, internal
@@ -41,6 +41,19 @@ class LoginRequest(Schema):
 
     email: str
     password: str
+
+
+class UpdateProfileRequest(Schema):
+    """Request schema for updating the current user's profile fields.
+
+    All fields are optional — only provided fields are updated.
+    Omitted fields are left unchanged on the user record.
+    """
+
+    first_name: str | None = None
+    last_name: str | None = None
+    username: str | None = None
+    email: str | None = None
 
 
 class MessageResponse(Schema):
