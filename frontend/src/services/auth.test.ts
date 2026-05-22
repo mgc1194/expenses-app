@@ -1,11 +1,8 @@
 // services/auth.test.ts — Unit tests for auth service endpoints.
-//
-// apiFetch, CSRF, and ApiError behaviour is covered in api-client.test.ts.
-// These tests focus on the correct HTTP method, URL, and error propagation
-// for each auth endpoint.
+
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { getMe, login, logout, register, updateProfile } from '@services/auth';
+import { getMe, login, logout, register, updatePassword, updateProfile } from '@services/auth';
 
 const mockFetch = vi.fn();
 vi.stubGlobal('fetch', mockFetch);
@@ -49,7 +46,6 @@ describe('register', () => {
     mockFetch.mockReturnValueOnce(mockResponse({ id: 2 }, 201));
 
     await register({ email: 'new@b.com', password: 'Password1!', confirm_password: 'Password1!' });
-
     expect(mockFetch).toHaveBeenCalledWith(
       '/api/v1/auth/register',
       expect.objectContaining({ method: 'POST' }),
@@ -58,7 +54,6 @@ describe('register', () => {
 
   it('throws ApiError on 400', async () => {
     mockFetch.mockReturnValueOnce(mockResponse({ detail: 'Email already exists' }, 400));
-
     await expect(register({ email: 'dupe@b.com', password: 'Password1!', confirm_password: 'Password1!' }))
       .rejects.toMatchObject({ status: 400, message: 'Email already exists' });
   });
@@ -67,7 +62,6 @@ describe('register', () => {
 describe('logout', () => {
   it('calls POST /api/v1/auth/logout and resolves on 204', async () => {
     mockFetch.mockReturnValueOnce(Promise.resolve({ ok: true, status: 204 } as Response));
-
     await expect(logout()).resolves.toBeUndefined();
   });
 });
@@ -75,9 +69,7 @@ describe('logout', () => {
 describe('getMe', () => {
   it('calls GET /api/v1/auth/me', async () => {
     mockFetch.mockReturnValueOnce(mockResponse({ id: 1 }));
-
     await getMe();
-
     expect(mockFetch).toHaveBeenCalledWith(
       '/api/v1/auth/me',
       expect.objectContaining({ credentials: 'include' }),
@@ -94,9 +86,7 @@ describe('getMe', () => {
 describe('updateProfile', () => {
   it('calls PATCH /api/v1/auth/me with the payload', async () => {
     mockFetch.mockReturnValueOnce(mockResponse({ id: 1, email: 'new@b.com' }));
-
     await updateProfile({ email: 'new@b.com' });
-
     expect(mockFetch).toHaveBeenCalledWith(
       '/api/v1/auth/me',
       expect.objectContaining({
@@ -110,16 +100,40 @@ describe('updateProfile', () => {
   it('returns the updated user', async () => {
     const updated = { id: 1, email: 'new@b.com', username: 'newuser', first_name: 'Jane', last_name: 'Doe', households: [] };
     mockFetch.mockReturnValueOnce(mockResponse(updated));
-
     const result = await updateProfile({ email: 'new@b.com' });
-
     expect(result).toEqual(updated);
   });
 
   it('throws ApiError on 400', async () => {
     mockFetch.mockReturnValueOnce(mockResponse({ detail: 'Email already exists.' }, 400));
-
     await expect(updateProfile({ email: 'taken@b.com' }))
       .rejects.toMatchObject({ status: 400, message: 'Email already exists.' });
+  });
+});
+
+describe('updatePassword', () => {
+  it('calls POST /api/v1/auth/me/password with the payload', async () => {
+    mockFetch.mockReturnValueOnce(Promise.resolve({ ok: true, status: 204 } as Response));
+    await updatePassword({ current_password: 'Old1!', new_password: 'New1!', confirm_new_password: 'New1!' });
+    expect(mockFetch).toHaveBeenCalledWith(
+      '/api/v1/auth/me/password',
+      expect.objectContaining({
+        method: 'POST',
+        credentials: 'include',
+        headers: expect.objectContaining({ 'X-CSRFToken': expect.any(String) }),
+      }),
+    );
+  });
+ 
+  it('resolves to undefined on success', async () => {
+    mockFetch.mockReturnValueOnce(Promise.resolve({ ok: true, status: 204 } as Response));
+    await expect(updatePassword({ current_password: 'Old1!', new_password: 'New1!', confirm_new_password: 'New1!' }))
+      .resolves.toBeUndefined();
+  });
+ 
+  it('throws ApiError on 400', async () => {
+    mockFetch.mockReturnValueOnce(mockResponse({ detail: 'Current password is incorrect.' }, 400));
+    await expect(updatePassword({ current_password: 'wrong', new_password: 'New1!', confirm_new_password: 'New1!' }))
+      .rejects.toMatchObject({ status: 400, message: 'Current password is incorrect.' });
   });
 });

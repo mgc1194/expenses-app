@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router';
 
 import { useAuth } from '@context/auth-context';
 import { AppHeader } from '@layout/app-header';
+import { ChangePasswordForm } from '@pages/settings/change-password-form';
 import { updateProfile } from '@services/auth';
 
 export function SettingsPage() {
@@ -17,7 +18,6 @@ export function SettingsPage() {
   const [lastName, setLastName] = useState(user?.last_name ?? '');
   const [username, setUsername] = useState(user?.username ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
-
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -26,14 +26,8 @@ export function SettingsPage() {
     setSuccessMessage(null);
     setErrorMessage(null);
     setIsSubmitting(true);
-
     try {
-      const updated = await updateProfile({
-        first_name: firstName,
-        last_name: lastName,
-        username,
-        email,
-      });
+      const updated = await updateProfile({ first_name: firstName, last_name: lastName, username, email });
       setUser(updated);
       setFirstName(updated.first_name);
       setLastName(updated.last_name);
@@ -61,9 +55,7 @@ export function SettingsPage() {
           Dashboard
         </Button>
 
-        <Typography variant="h3" sx={{ mb: 0.5 }}>
-          Settings
-        </Typography>
+        <Typography variant="h3" sx={{ mb: 0.5 }}>Settings</Typography>
         <Typography color="text.secondary" sx={{ mb: 5 }}>
           Manage your profile and subscription.
         </Typography>
@@ -72,11 +64,8 @@ export function SettingsPage() {
 
           {/* Profile */}
           <Paper variant="outlined" sx={{ p: 3 }}>
-            <Typography variant="h6" sx={{ mb: 0.5 }}>
-              Profile
-            </Typography>
+            <Typography variant="h6" sx={{ mb: 0.5 }}>Profile</Typography>
             <Divider sx={{ mb: 3 }} />
-
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                 <TextField
@@ -96,7 +85,6 @@ export function SettingsPage() {
                   onChange={e => setLastName(e.target.value)}
                 />
               </Box>
-
               <TextField
                 id="username"
                 label="Username"
@@ -105,7 +93,6 @@ export function SettingsPage() {
                 value={username}
                 onChange={e => setUsername(e.target.value)}
               />
-
               <TextField
                 id="email"
                 label="Email address"
@@ -115,40 +102,21 @@ export function SettingsPage() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
               />
-
-              {successMessage && (
-                <Alert severity="success">{successMessage}</Alert>
-              )}
-              {errorMessage && (
-                <Alert severity="error">{errorMessage}</Alert>
-              )}
-
+              {successMessage && <Alert severity="success">{successMessage}</Alert>}
+              {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
               <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <Button
-                  variant="contained"
-                  onClick={handleSaveProfile}
-                  disabled={isSubmitting}
-                >
+                <Button variant="contained" onClick={handleSaveProfile} disabled={isSubmitting}>
                   {isSubmitting ? 'Saving…' : 'Save'}
                 </Button>
               </Box>
             </Box>
           </Paper>
 
-          {/* Password — populated in Issue 3 */}
-          <Paper variant="outlined" sx={{ p: 3 }}>
-            <Typography variant="h6" sx={{ mb: 0.5 }}>
-              Password
-            </Typography>
-            <Divider sx={{ mb: 2 }} />
-            {/* TODO: change password form (Issue 3) */}
-          </Paper>
+          <ChangePasswordForm />
 
           {/* Subscription — populated in Issue 4 */}
           <Paper variant="outlined" sx={{ p: 3 }}>
-            <Typography variant="h6" sx={{ mb: 0.5 }}>
-              Subscription
-            </Typography>
+            <Typography variant="h6" sx={{ mb: 0.5 }}>Subscription</Typography>
             <Divider sx={{ mb: 2 }} />
             {/* TODO: subscription plan display (Issue 4) */}
           </Paper>

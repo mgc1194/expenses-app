@@ -33,9 +33,13 @@
       "@context/*": ["src/context/*"],
       "@services/*": ["src/services/*"],
       "@utils/*": ["src/utils/*"],
-      "@tests/*": ["tests/*"],
+      "@tests/*": ["tests/*"]
     }
   },
   "include": ["src", "tests"],
-  "exclude": ["tests/**/*.test.ts", "tests/**/*.test.tsx"]
+  "exclude": [
+    "tests/**/*.test.ts",
+    "tests/**/*.test.tsx",
+    "tests/utils/**"
+  ]
 }

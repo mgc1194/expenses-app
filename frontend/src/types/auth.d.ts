@@ -30,3 +30,9 @@ export interface UpdateProfileRequest {
   username?: string | null;
   email?: string | null;
 }
+
+export interface UpdatePasswordRequest {
+  current_password: string;
+  new_password: string;
+  confirm_new_password: string;
+}
