@@ -2,17 +2,18 @@
 api/v1/auth.py — v1 authentication endpoints.
 
 Endpoints:
-    POST  /api/v1/auth/register — create a new user account
-    POST  /api/v1/auth/login    — authenticate with email + password, start a session
-    POST  /api/v1/auth/logout   — invalidate the current session
-    GET   /api/v1/auth/me       — return the current authenticated user
-    PATCH /api/v1/auth/me       — update the current user's profile fields
+    POST  /api/v1/auth/register    — create a new user account
+    POST  /api/v1/auth/login       — authenticate with email + password, start a session
+    POST  /api/v1/auth/logout      — invalidate the current session
+    GET   /api/v1/auth/me          — return the current authenticated user
+    PATCH /api/v1/auth/me          — update the current user's profile fields
+    POST  /api/v1/auth/me/password — change the current user's password
 """
 
 import logging
 import secrets
 
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.core.exceptions import ValidationError
@@ -25,6 +26,7 @@ from schemas.auth import (
     LoginRequest,
     MessageResponse,
     RegisterRequest,
+    UpdatePasswordRequest,
     UpdateProfileRequest,
     UserSchema,
 )
@@ -68,8 +70,6 @@ def auth_register(request, payload: RegisterRequest):
     if payload.password != payload.confirm_password:
         raise HttpError(400, 'Passwords do not match.')
 
-    # Construct an unsaved user so UserAttributeSimilarityValidator can
-    # compare the password against the user's attributes (email, name, etc.).
     unsaved_user = CustomUser(
         email=email,
         first_name=payload.first_name,
@@ -94,14 +94,10 @@ def auth_register(request, payload: RegisterRequest):
             last_name=payload.last_name,
         )
     except IntegrityError:
-        # A concurrent request created the same email or username between
-        # our uniqueness check and the insert. Treat as a duplicate email
-        # since that is the most likely cause.
         raise HttpError(400, 'An account with this email already exists.') from None
 
     login(request, user)
     logger.info(f'New user registered: {user.username} ({user.email}).')
-
     return _serialize_user(user)
 
 
@@ -130,8 +126,6 @@ def auth_login(request, payload: LoginRequest):
     except CustomUser.DoesNotExist:
         raise HttpError(401, 'Invalid email or password.') from None
     except CustomUser.MultipleObjectsReturned:
-        # Should not occur once the unique constraint is in place, but
-        # handled defensively for any pre-existing duplicate rows.
         logger.error(f'Multiple users found for email: {email}')
         raise HttpError(401, 'Invalid email or password.') from None
 
@@ -146,7 +140,6 @@ def auth_login(request, payload: LoginRequest):
 
     login(request, authenticated_user)
     logger.info(f'User {authenticated_user.username} logged in.')
-
     return _serialize_user(
         CustomUser.objects.prefetch_related('households').get(pk=authenticated_user.pk)
     )
@@ -269,6 +262,48 @@ def auth_update_profile(request, payload: UpdateProfileRequest):
     user.refresh_from_db()
     user = CustomUser.objects.prefetch_related('households').get(pk=user.pk)
     return _serialize_user(user)
+
+
+@router.post('/auth/me/password', auth=django_auth, response={204: None})
+def auth_update_password(request, payload: UpdatePasswordRequest):
+    """Changes the current user's password.
+
+    Verifies the current password before applying the change, then
+    re-authenticates the session so the user is not logged out.
+
+    Args:
+        request: The HTTP request object. Must be authenticated.
+        payload: Current password, new password, and confirmation.
+
+    Returns:
+        None — 204 No Content on success.
+
+    Raises:
+        HttpError: 400 if current_password is wrong, passwords don't match,
+            or new_password fails Django's validators.
+    """
+    user: CustomUser = request.user
+
+    if not user.check_password(payload.current_password):
+        raise HttpError(400, 'Current password is incorrect.')
+
+    if payload.new_password != payload.confirm_new_password:
+        raise HttpError(400, 'New passwords do not match.')
+
+    try:
+        validate_password(payload.new_password, user=user)
+    except ValidationError as e:
+        raise HttpError(400, ' '.join(e.messages)) from None
+
+    user.set_password(payload.new_password)
+    user.save()
+
+    # Keep the session alive — Django rotates the session hash on password
+    # change, which would otherwise log out the user immediately.
+    update_session_auth_hash(request, user)
+    logger.info(f'User {user.pk} changed their password.')
+
+    return 204, None
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

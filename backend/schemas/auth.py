@@ -56,6 +56,14 @@ class UpdateProfileRequest(Schema):
     email: str | None = None
 
 
+class UpdatePasswordRequest(Schema):
+    """Request schema for changing the current user's password."""
+
+    current_password: str
+    new_password: str
+    confirm_new_password: str
+
+
 class MessageResponse(Schema):
     """Generic message response for simple confirmations."""
 

@@ -4,8 +4,8 @@
 // No mocking of fetch or service internals — exercises the real service code
 // with realistic API responses intercepted by MSW.
 
-import { describe, expect, it } from 'vitest';
 import { http, HttpResponse } from 'msw';
+import { describe, expect, it } from 'vitest';
 
 import { ApiError } from '@services/api-client';
 import {

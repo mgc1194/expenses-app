@@ -1,6 +1,12 @@
 // services/auth.ts — Typed fetch functions for authentication endpoints.
 
-import type { LoginRequest, RegisterRequest, UpdateProfileRequest, User } from '@serve/types/global';
+import type {
+  LoginRequest,
+  RegisterRequest,
+  UpdatePasswordRequest,
+  UpdateProfileRequest,
+  User,
+} from '@serve/types/global';
 import { apiFetch, ApiError } from '@services/api-client';
 
 export { ApiError };
@@ -30,6 +36,13 @@ export async function getMe(): Promise<User> {
 export async function updateProfile(payload: UpdateProfileRequest): Promise<User> {
   return apiFetch<User>('/auth/me', {
     method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updatePassword(payload: UpdatePasswordRequest): Promise<void> {
+  return apiFetch<void>('/auth/me/password', {
+    method: 'POST',
     body: JSON.stringify(payload),
   });
 }

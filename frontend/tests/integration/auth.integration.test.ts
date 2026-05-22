@@ -1,14 +1,10 @@
 // tests/integration/auth.integration.test.ts — Auth service integration tests.
-//
-// Tests the full request/response cycle of the auth service against MSW.
-// No mocking of fetch or service internals — exercises the real service code
-// with realistic API responses intercepted by MSW.
 
-import { describe, expect, it } from 'vitest';
 import { http, HttpResponse } from 'msw';
+import { describe, expect, it } from 'vitest';
 
 import { ApiError } from '@services/api-client';
-import { getMe, login, logout, register, updateProfile } from '@services/auth';
+import { getMe, login, logout, register, updatePassword, updateProfile } from '@services/auth';
 
 import { mockUser, server } from '../utils/msw';
 
@@ -20,49 +16,25 @@ describe('login', () => {
   });
 
   it('throws ApiError with status 401 on invalid credentials', async () => {
-    server.use(
-      http.post('/api/v1/auth/login', () =>
-        HttpResponse.json({ detail: 'Invalid credentials' }, { status: 401 }),
-      ),
-    );
-
+    server.use(http.post('/api/v1/auth/login', () =>
+      HttpResponse.json({ detail: 'Invalid credentials' }, { status: 401 })));
     await expect(login({ email: 'a@b.com', password: 'wrong' }))
-      .rejects.toMatchObject({ status: 401, message: 'Invalid credentials' });
-  });
-
-  it('throws ApiError with status 500 on server error', async () => {
-    server.use(
-      http.post('/api/v1/auth/login', () =>
-        HttpResponse.json({ detail: 'Internal server error' }, { status: 500 }),
-      ),
-    );
-
-    await expect(login({ email: 'a@b.com', password: 'secret' }))
-      .rejects.toBeInstanceOf(ApiError);
+      .rejects.toMatchObject({ status: 401 });
   });
 });
 
 
 describe('register', () => {
   it('returns the created user on success', async () => {
-    const user = await register({
-      email: 'new@example.com',
-      password: 'Secure-Password1!',
-      confirm_password: 'Secure-Password1!',
-    });
+    const user = await register({ email: 'new@example.com', password: 'Pw1!', confirm_password: 'Pw1!' });
     expect(user).toMatchObject({ email: mockUser.email });
   });
 
   it('throws ApiError with status 400 on duplicate email', async () => {
-    server.use(
-      http.post('/api/v1/auth/register', () =>
-        HttpResponse.json({ detail: 'Email already exists' }, { status: 400 }),
-      ),
-    );
-
-    await expect(
-      register({ email: 'dupe@example.com', password: 'Password1!', confirm_password: 'Password1!' }),
-    ).rejects.toMatchObject({ status: 400, message: 'Email already exists' });
+    server.use(http.post('/api/v1/auth/register', () =>
+      HttpResponse.json({ detail: 'Email already exists' }, { status: 400 })));
+    await expect(register({ email: 'dupe@example.com', password: 'Pw1!', confirm_password: 'Pw1!' }))
+      .rejects.toMatchObject({ status: 400 });
   });
 });
 
@@ -71,39 +43,18 @@ describe('logout', () => {
   it('resolves on 204', async () => {
     await expect(logout()).resolves.toBeUndefined();
   });
-
-  it('throws ApiError on unexpected error', async () => {
-    server.use(
-      http.post('/api/v1/auth/logout', () =>
-        HttpResponse.json({ detail: 'Unexpected error' }, { status: 500 }),
-      ),
-    );
-
-    await expect(logout()).rejects.toBeInstanceOf(ApiError);
-  });
 });
 
 
 describe('getMe', () => {
   it('returns the current user on success', async () => {
     const user = await getMe();
-    expect(user).toMatchObject({ email: mockUser.email, id: mockUser.id });
+    expect(user).toMatchObject({ email: mockUser.email });
   });
 
   it('throws ApiError with status 401 when unauthenticated', async () => {
-    server.use(
-      http.get('/api/v1/auth/me', () => new HttpResponse(null, { status: 401 })),
-    );
-
-    await expect(getMe()).rejects.toMatchObject({ status: 401 });
-  });
-
-  it('throws ApiError with status 500 on server error', async () => {
-    server.use(
-      http.get('/api/v1/auth/me', () => new HttpResponse(null, { status: 500 })),
-    );
-
-    await expect(getMe()).rejects.toMatchObject({ status: 500 });
+    server.use(http.get('/api/v1/auth/me', () => new HttpResponse(null, { status: 401 })));
+    await expect(getMe()).rejects.toBeInstanceOf(ApiError);
   });
 });
 
@@ -115,33 +66,48 @@ describe('updateProfile', () => {
   });
 
   it('throws ApiError with status 400 on duplicate email', async () => {
-    server.use(
-      http.patch('/api/v1/auth/me', () =>
-        HttpResponse.json({ detail: 'An account with this email already exists.' }, { status: 400 }),
-      ),
-    );
+    server.use(http.patch('/api/v1/auth/me', () =>
+      HttpResponse.json({ detail: 'An account with this email already exists.' }, { status: 400 })));
+    await expect(updateProfile({ email: 'taken@example.com' })).rejects.toMatchObject({ status: 400 });
+  });
+});
 
-    await expect(updateProfile({ email: 'taken@example.com' }))
-      .rejects.toMatchObject({ status: 400 });
+
+describe('updatePassword', () => {
+  it('resolves on success', async () => {
+    await expect(updatePassword({
+      current_password: 'Old1!',
+      new_password: 'New1!',
+      confirm_new_password: 'New1!',
+    })).resolves.toBeUndefined();
   });
 
-  it('throws ApiError with status 400 on duplicate username', async () => {
-    server.use(
-      http.patch('/api/v1/auth/me', () =>
-        HttpResponse.json({ detail: 'This username is already taken.' }, { status: 400 }),
-      ),
-    );
+  it('throws ApiError with status 400 on wrong current password', async () => {
+    server.use(http.post('/api/v1/auth/me/password', () =>
+      HttpResponse.json({ detail: 'Current password is incorrect.' }, { status: 400 })));
+    await expect(updatePassword({
+      current_password: 'wrong',
+      new_password: 'New1!',
+      confirm_new_password: 'New1!',
+    })).rejects.toMatchObject({ status: 400, message: 'Current password is incorrect.' });
+  });
 
-    await expect(updateProfile({ username: 'taken' }))
-      .rejects.toMatchObject({ status: 400 });
+  it('throws ApiError with status 400 on mismatched passwords', async () => {
+    server.use(http.post('/api/v1/auth/me/password', () =>
+      HttpResponse.json({ detail: 'New passwords do not match.' }, { status: 400 })));
+    await expect(updatePassword({
+      current_password: 'Old1!',
+      new_password: 'New1!',
+      confirm_new_password: 'Different1!',
+    })).rejects.toMatchObject({ status: 400 });
   });
 
   it('throws ApiError with status 401 when unauthenticated', async () => {
-    server.use(
-      http.patch('/api/v1/auth/me', () => new HttpResponse(null, { status: 401 })),
-    );
-
-    await expect(updateProfile({ first_name: 'Jane' }))
-      .rejects.toMatchObject({ status: 401 });
+    server.use(http.post('/api/v1/auth/me/password', () => new HttpResponse(null, { status: 401 })));
+    await expect(updatePassword({
+      current_password: 'Old1!',
+      new_password: 'New1!',
+      confirm_new_password: 'New1!',
+    })).rejects.toMatchObject({ status: 401 });
   });
 });

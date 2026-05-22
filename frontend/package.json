@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "lint": "eslint src",
+    "lint": "eslint src tests",
     "test": "vitest",
     "test:unit": "vitest run src/**/*.test.*",
     "test:integration": "vitest run tests/integration",
@@ -60,6 +60,7 @@
     "vitest": "^3.0.0"
   },
   "lint-staged": {
-    "src/**/*.{ts,tsx}": "eslint --max-warnings=0"
+    "src/**/*.{ts,tsx}": "eslint --max-warnings=0",
+    "tests/**/*.{ts,tsx}": "eslint --max-warnings=0"
   }
 }

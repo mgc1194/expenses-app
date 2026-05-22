@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom';
-import { server } from '@tests/utils/msw';
 import { afterAll, afterEach, beforeAll } from 'vitest';
+
+import { server } from '@tests/utils/msw';
 
 
 Object.defineProperty(document, 'cookie', {

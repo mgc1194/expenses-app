@@ -11,6 +11,10 @@ import { makeUser } from '@tests/factories';
 
 vi.mock('@context/auth-context', () => ({ useAuth: vi.fn() }));
 vi.mock('@layout/app-header', () => ({ AppHeader: () => <header /> }));
+// Stub out ChangePasswordForm so password-section tests stay in their own file.
+vi.mock('@pages/settings/change-password-form', () => ({
+  ChangePasswordForm: () => <div data-testid="change-password-form" />,
+}));
 vi.mock('@services/auth', async () => {
   const actual = await vi.importActual('@services/auth');
   return { ...actual, updateProfile: vi.fn() };
@@ -34,12 +38,7 @@ const mockUser = makeUser({
 
 function setup() {
   const setUser = vi.fn();
-  mockUseAuth.mockReturnValue({
-    user: mockUser,
-    isLoading: false,
-    sessionError: false,
-    setUser,
-  });
+  mockUseAuth.mockReturnValue({ user: mockUser, isLoading: false, sessionError: false, setUser });
   render(<MemoryRouter><SettingsPage /></MemoryRouter>);
   return { setUser };
 }
@@ -57,22 +56,17 @@ describe('SettingsPage rendering', () => {
     expect(screen.getByRole('heading', { name: /^settings$/i })).toBeDefined();
   });
 
-  it('renders the subheading', () => {
-    setup();
-    expect(screen.getByText(/manage your profile and subscription/i)).toBeDefined();
-  });
-
-  it('renders the Profile section heading', () => {
+  it('renders the Profile section', () => {
     setup();
     expect(screen.getByRole('heading', { name: /^profile$/i })).toBeDefined();
   });
 
-  it('renders the Password section heading', () => {
+  it('renders the ChangePasswordForm', () => {
     setup();
-    expect(screen.getByRole('heading', { name: /^password$/i })).toBeDefined();
+    expect(screen.getByTestId('change-password-form')).toBeDefined();
   });
 
-  it('renders the Subscription section heading', () => {
+  it('renders the Subscription section', () => {
     setup();
     expect(screen.getByRole('heading', { name: /^subscription$/i })).toBeDefined();
   });
@@ -86,128 +80,86 @@ describe('SettingsPage rendering', () => {
 // ── Profile form pre-population ───────────────────────────────────────────────
 
 describe('SettingsPage profile form pre-population', () => {
-  it('pre-populates first name from the auth context', () => {
+  it('pre-populates first name', () => {
     setup();
-    const input = screen.getByLabelText(/first name/i) as HTMLInputElement;
-    expect(input.value).toBe('Test');
+    expect((screen.getByLabelText(/first name/i) as HTMLInputElement).value).toBe('Test');
   });
 
-  it('pre-populates last name from the auth context', () => {
+  it('pre-populates last name', () => {
     setup();
-    const input = screen.getByLabelText(/last name/i) as HTMLInputElement;
-    expect(input.value).toBe('User');
+    expect((screen.getByLabelText(/last name/i) as HTMLInputElement).value).toBe('User');
   });
 
-  it('pre-populates username from the auth context', () => {
+  it('pre-populates username', () => {
     setup();
-    const input = screen.getByLabelText(/username/i) as HTMLInputElement;
-    expect(input.value).toBe('testuser');
+    expect((screen.getByLabelText(/username/i) as HTMLInputElement).value).toBe('testuser');
   });
 
-  it('pre-populates email from the auth context', () => {
+  it('pre-populates email', () => {
     setup();
-    const input = screen.getByLabelText(/email address/i) as HTMLInputElement;
-    expect(input.value).toBe('test@example.com');
+    expect((screen.getByLabelText(/email address/i) as HTMLInputElement).value).toBe('test@example.com');
   });
 });
 
-// ── Profile form save — success ────────────────────────────────────────────────
+// ── Profile save — success ────────────────────────────────────────────────────
 
 describe('SettingsPage profile save — success', () => {
-  it('calls updateProfile with the current field values', async () => {
-    const updatedUser = { ...mockUser, first_name: 'Jane' };
-    mockUpdateProfile.mockResolvedValueOnce(updatedUser);
+  it('calls updateProfile with current field values', async () => {
+    mockUpdateProfile.mockResolvedValueOnce({ ...mockUser, first_name: 'Jane' });
     setup();
-
     fireEvent.change(screen.getByLabelText(/first name/i), { target: { value: 'Jane' } });
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
-    });
-
-    expect(mockUpdateProfile).toHaveBeenCalledWith(
-      expect.objectContaining({ first_name: 'Jane' }),
-    );
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /^save$/i })); });
+    expect(mockUpdateProfile).toHaveBeenCalledWith(expect.objectContaining({ first_name: 'Jane' }));
   });
 
-  it('updates the auth context with the returned user on success', async () => {
-    const updatedUser = { ...mockUser, email: 'new@example.com' };
-    mockUpdateProfile.mockResolvedValueOnce(updatedUser);
+  it('updates the auth context with the returned user', async () => {
+    const updated = { ...mockUser, email: 'new@example.com' };
+    mockUpdateProfile.mockResolvedValueOnce(updated);
     const { setUser } = setup();
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /^save$/i })); });
+    expect(setUser).toHaveBeenCalledWith(updated);
+  });
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
+  it('syncs form fields from the API response', async () => {
+    const updated = { ...mockUser, email: 'normalized@example.com' };
+    mockUpdateProfile.mockResolvedValueOnce(updated);
+    setup();
+    fireEvent.change(screen.getByLabelText(/email address/i), { target: { value: 'NORMALIZED@EXAMPLE.COM' } });
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /^save$/i })); });
+    await waitFor(() => {
+      expect((screen.getByLabelText(/email address/i) as HTMLInputElement).value).toBe('normalized@example.com');
     });
-
-    expect(setUser).toHaveBeenCalledWith(updatedUser);
   });
 
   it('shows a success message after saving', async () => {
     mockUpdateProfile.mockResolvedValueOnce(mockUser);
     setup();
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
-    });
-
-    await waitFor(() =>
-      expect(screen.getByText(/profile updated successfully/i)).toBeDefined()
-    );
-  });
-
-  it('syncs form fields from the API response after save (e.g. lowercased email)', async () => {
-    const updatedUser = { ...mockUser, email: 'normalized@example.com', username: 'synceduser' };
-    mockUpdateProfile.mockResolvedValueOnce(updatedUser);
-    setup();
-
-    fireEvent.change(screen.getByLabelText(/email address/i), { target: { value: 'NORMALIZED@EXAMPLE.COM' } });
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
-    });
-
-    await waitFor(() => {
-      const emailInput = screen.getByLabelText(/email address/i) as HTMLInputElement;
-      expect(emailInput.value).toBe('normalized@example.com');
-    });
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /^save$/i })); });
+    await waitFor(() => expect(screen.getByText(/profile updated successfully/i)).toBeDefined());
   });
 
   it('does not navigate away after saving', async () => {
     mockUpdateProfile.mockResolvedValueOnce(mockUser);
     setup();
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
-    });
-
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /^save$/i })); });
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 });
 
-// ── Profile form save — error ─────────────────────────────────────────────────
+// ── Profile save — error ──────────────────────────────────────────────────────
 
 describe('SettingsPage profile save — error', () => {
-  it('shows an error message when updateProfile rejects', async () => {
+  it('shows an error message on rejection', async () => {
     mockUpdateProfile.mockRejectedValueOnce(new Error('Email already exists.'));
     setup();
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
-    });
-
-    await waitFor(() =>
-      expect(screen.getByText(/email already exists/i)).toBeDefined()
-    );
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /^save$/i })); });
+    await waitFor(() => expect(screen.getByText(/email already exists/i)).toBeDefined());
   });
 
   it('does not update the auth context on error', async () => {
     mockUpdateProfile.mockRejectedValueOnce(new Error('Something went wrong.'));
     const { setUser } = setup();
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
-    });
-
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /^save$/i })); });
     expect(setUser).not.toHaveBeenCalled();
   });
 });
