@@ -45,7 +45,9 @@ class LoginRequest(Schema):
 
 class UpdateProfileRequest(Schema):
     """Request schema for updating the current user's profile fields.
+
     All fields are optional — only provided fields are updated.
+    Omitted fields are left unchanged on the user record.
     """
 
     first_name: str | None = None
