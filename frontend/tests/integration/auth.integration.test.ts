@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 import { http, HttpResponse } from 'msw';
 
 import { ApiError } from '@services/api-client';
-import { getMe, login, logout, register } from '@services/auth';
+import { getMe, login, logout, register, updateProfile } from '@services/auth';
 
 import { mockUser, server } from '../utils/msw';
 
@@ -104,5 +104,44 @@ describe('getMe', () => {
     );
 
     await expect(getMe()).rejects.toMatchObject({ status: 500 });
+  });
+});
+
+
+describe('updateProfile', () => {
+  it('returns the updated user on success', async () => {
+    const user = await updateProfile({ first_name: 'Jane' });
+    expect(user).toMatchObject({ first_name: 'Jane' });
+  });
+
+  it('throws ApiError with status 400 on duplicate email', async () => {
+    server.use(
+      http.patch('/api/v1/auth/me', () =>
+        HttpResponse.json({ detail: 'An account with this email already exists.' }, { status: 400 }),
+      ),
+    );
+
+    await expect(updateProfile({ email: 'taken@example.com' }))
+      .rejects.toMatchObject({ status: 400 });
+  });
+
+  it('throws ApiError with status 400 on duplicate username', async () => {
+    server.use(
+      http.patch('/api/v1/auth/me', () =>
+        HttpResponse.json({ detail: 'This username is already taken.' }, { status: 400 }),
+      ),
+    );
+
+    await expect(updateProfile({ username: 'taken' }))
+      .rejects.toMatchObject({ status: 400 });
+  });
+
+  it('throws ApiError with status 401 when unauthenticated', async () => {
+    server.use(
+      http.patch('/api/v1/auth/me', () => new HttpResponse(null, { status: 401 })),
+    );
+
+    await expect(updateProfile({ first_name: 'Jane' }))
+      .rejects.toMatchObject({ status: 401 });
   });
 });
