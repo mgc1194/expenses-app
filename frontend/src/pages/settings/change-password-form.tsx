@@ -2,6 +2,7 @@
 
 import { Alert, Box, Button, Divider, Paper, TextField, Typography } from '@mui/material';
 import { useState } from 'react';
+import type { FormEvent } from 'react';
 
 import { updatePassword } from '@services/auth';
 
@@ -13,7 +14,8 @@ export function ChangePasswordForm() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  async function handleChangePassword() {
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
     setSuccessMessage(null);
     setErrorMessage(null);
     setIsSubmitting(true);
@@ -38,7 +40,11 @@ export function ChangePasswordForm() {
     <Paper variant="outlined" sx={{ p: 3 }}>
       <Typography variant="h6" sx={{ mb: 0.5 }}>Password</Typography>
       <Divider sx={{ mb: 3 }} />
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+      >
         <TextField
           id="currentPassword"
           label="Current password"
@@ -69,7 +75,7 @@ export function ChangePasswordForm() {
         {successMessage && <Alert severity="success">{successMessage}</Alert>}
         {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <Button variant="contained" onClick={handleChangePassword} disabled={isSubmitting}>
+          <Button type="submit" variant="contained" disabled={isSubmitting}>
             {isSubmitting ? 'Updating…' : 'Update password'}
           </Button>
         </Box>

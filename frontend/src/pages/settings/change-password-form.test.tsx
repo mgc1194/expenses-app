@@ -22,6 +22,17 @@ beforeEach(() => vi.clearAllMocks());
 // ── Rendering ─────────────────────────────────────────────────────────────────
 
 describe('ChangePasswordForm rendering', () => {
+  it('renders as a form element', () => {
+    setup();
+    expect(document.querySelector('form')).toBeDefined();
+  });
+
+  it('renders the submit button as type=submit', () => {
+    setup();
+    expect((screen.getByRole('button', { name: /update password/i }) as HTMLButtonElement).type).toBe('submit');
+  });
+
+
   it('renders current password field as type=password', () => {
     setup();
     expect((screen.getByLabelText(/current password/i) as HTMLInputElement).type).toBe('password');
