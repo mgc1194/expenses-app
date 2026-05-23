@@ -5,11 +5,7 @@
     "composite": true,
     "target": "ES2022",
     "useDefineForClassFields": true,
-    "lib": [
-      "ES2022",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
     "moduleResolution": "bundler",
@@ -33,9 +29,8 @@
       "@context/*": ["src/context/*"],
       "@services/*": ["src/services/*"],
       "@utils/*": ["src/utils/*"],
-      "@tests/*": ["tests/*"],
+      "@tests/*": ["tests/*"]
     }
   },
-  "include": ["src", "tests"],
-  "exclude": ["tests/**/*.test.ts", "tests/**/*.test.tsx"]
+  "include": ["src"]
 }

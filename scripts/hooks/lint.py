@@ -34,7 +34,8 @@ def filter_frontend(files: list[str]) -> list[str]:
     return [
         f
         for f in files
-        if f.startswith("frontend/src/") and f.endswith((".ts", ".tsx"))
+        if (f.startswith("frontend/src/") or f.startswith("frontend/tests/"))
+        and f.endswith((".ts", ".tsx"))
     ]
 
 

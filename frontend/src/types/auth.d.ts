@@ -23,3 +23,16 @@ export interface RegisterRequest {
   first_name?: string;
   last_name?: string;
 }
+
+export interface UpdateProfileRequest {
+  first_name?: string | null;
+  last_name?: string | null;
+  username?: string | null;
+  email?: string | null;
+}
+
+export interface UpdatePasswordRequest {
+  current_password: string;
+  new_password: string;
+  confirm_new_password: string;
+}
