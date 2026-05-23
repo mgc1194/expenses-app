@@ -14,7 +14,7 @@ jobs:
       - name: Get date-based version
         id: version
         run: |
-          echo "tag=v$(date +'%Y.%-m.%-d')" >> $GITHUB_OUTPUT
+          echo "tag=v$(date -u +'%Y.%m.%d')-${GITHUB_RUN_NUMBER}" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v3
