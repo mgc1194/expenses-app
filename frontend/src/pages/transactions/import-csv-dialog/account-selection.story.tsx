@@ -4,7 +4,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 
 import { AccountSelection } from '@pages/transactions/import-csv-dialog/account-selection';
-import { makeAccount } from '@tests/factories';
+import { makeAccount } from '@serve/mocks';
 
 const ACCOUNTS = [
   makeAccount({

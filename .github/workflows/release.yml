@@ -11,11 +11,16 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Get date-based version
+        id: version
+        run: |
+          echo "tag=v$(date +'%Y.%-m.%-d')" >> $GITHUB_OUTPUT
+
       - name: Create Release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: v${{ github.run_number }}
-          name: Release v${{ github.run_number }}
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Release ${{ steps.version.outputs.tag }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

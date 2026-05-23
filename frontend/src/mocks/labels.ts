@@ -1,4 +1,4 @@
-// tests/factories/labels.ts — Factory for Label.
+// src/mocks/labels.ts — Mocks for Label.
 
 import type { Label } from '@serve/types/global';
 

@@ -4,7 +4,7 @@ import { Table, TableBody } from '@mui/material';
 import type { Decorator, Meta, StoryObj } from '@storybook/react';
 
 import { AccountRow } from '@pages/accounts/account-row';
-import { makeAccount } from '@tests/factories';
+import { makeAccount } from '@serve/mocks';
 
 // Wrap every story in a Table so TableRow / TableCell render correctly.
 const tableDecorator: Decorator = Story => (

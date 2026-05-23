@@ -5,9 +5,9 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DEFAULT_COLUMN_ORDER } from '@pages/transactions/transactions-table/columns';
+import { makeLabel, makeTransaction } from '@serve/mocks';
 import { ApiError } from '@services/transactions';
 import * as transactionsService from '@services/transactions';
-import { makeLabel, makeTransaction } from '@tests/factories';
 
 import { TransactionRow } from './transaction-row';
 

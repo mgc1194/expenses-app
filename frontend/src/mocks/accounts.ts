@@ -1,4 +1,4 @@
-// tests/factories/accounts.ts — Factories for AccountDetail, AccountType, and Bank.
+// src/mocks/accounts.ts — Mocks for AccountDetail, AccountType, and Bank.
 
 import type { AccountDetail, AccountType, Bank } from '@serve/types/global';
 
