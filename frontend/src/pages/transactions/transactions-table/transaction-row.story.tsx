@@ -5,7 +5,7 @@ import type { Decorator, Meta, StoryObj } from '@storybook/react';
 
 import { DEFAULT_COLUMN_ORDER } from '@pages/transactions/transactions-table/columns';
 import { TransactionRow } from '@pages/transactions/transactions-table/transaction-row';
-import { makeLabel, makeTransaction } from '@tests/factories';
+import { makeLabel, makeTransaction } from '@serve/mocks';
 
 const tableDecorator: Decorator = Story => (
   <Table size="small">

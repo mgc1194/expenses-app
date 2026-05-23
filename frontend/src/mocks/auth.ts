@@ -1,7 +1,7 @@
-// tests/factories/auth.ts — Factory for User.
+// src/mocks/auth.ts — Mocks for User.
 
+import { makeHousehold } from '@serve/mocks/households';
 import type { User } from '@serve/types/global';
-import { makeHousehold } from '@tests/factories/households';
 
 
 

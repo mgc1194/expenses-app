@@ -6,8 +6,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useAuth } from '@context/auth-context';
 import { SettingsPage } from '@pages/settings';
+import { makeUser } from '@serve/mocks';
 import { updateProfile } from '@services/auth';
-import { makeUser } from '@tests/factories';
 
 vi.mock('@context/auth-context', () => ({ useAuth: vi.fn() }));
 vi.mock('@layout/app-header', () => ({ AppHeader: () => <header /> }));

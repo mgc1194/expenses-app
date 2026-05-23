@@ -1,4 +1,4 @@
-// tests/factories/households.ts — Factories for Household, HouseholdDetail, and HouseholdMember.
+// src/mocks/households.ts — Mocks for Household, HouseholdDetail, and HouseholdMember.
 
 import type { Household, HouseholdDetail, HouseholdMember } from '@serve/types/global';
 

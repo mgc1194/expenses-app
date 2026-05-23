@@ -5,8 +5,8 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { makeLabel, makeTransaction } from '@serve/mocks';
 import * as transactionsService from '@services/transactions';
-import { makeLabel, makeTransaction } from '@tests/factories';
 
 import { TransactionLabelCell } from './transaction-label-cell';
 

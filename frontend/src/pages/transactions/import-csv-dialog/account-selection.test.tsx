@@ -3,7 +3,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { makeAccount } from '@tests/factories';
+import { makeAccount } from '@serve/mocks';
 
 import { AccountSelection } from './account-selection';
 
