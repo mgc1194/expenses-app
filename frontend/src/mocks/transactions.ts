@@ -1,4 +1,4 @@
-// tests/factories/transactions.ts — Factories for Transaction and FileImportResult.
+// src/mocks/transactions.ts — Mocks for Transaction and FileImportResult.
 
 import type { FileImportResult, Transaction } from '@serve/types/global';
 

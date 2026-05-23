@@ -4,7 +4,7 @@ import { Table, TableBody } from '@mui/material';
 import type { Decorator, Meta, StoryObj } from '@storybook/react';
 
 import { TransactionActionsCell } from '@pages/transactions/transactions-table/transaction-actions-cell';
-import { makeTransaction } from '@tests/factories';
+import { makeTransaction } from '@serve/mocks';
 
 const tableDecorator: Decorator = Story => (
   <Table size="small">

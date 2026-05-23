@@ -3,7 +3,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 
 import { TransactionsTable } from '@pages/transactions/transactions-table';
-import { makeLabel, makeTransaction } from '@tests/factories';
+import { makeLabel, makeTransaction } from '@serve/mocks';
 
 const LABELS = [
   makeLabel({ id: 1, name: 'Groceries', color: '#16a34a', category: 'Food' }),

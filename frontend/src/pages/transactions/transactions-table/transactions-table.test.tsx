@@ -3,8 +3,8 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { makeLabel, makeTransaction } from '@serve/mocks';
 import type { Transaction } from '@serve/types/global';
-import { makeLabel, makeTransaction } from '@tests/factories';
 
 
 import { TransactionsTable } from './index';
