@@ -49,7 +49,7 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "eslint-plugin-storybook": "^10.4.1",
     "globals": "^17.6.0",
-    "happy-dom": "^20.9.0",
+    "happy-dom": "^20.10.2",
     "lint-staged": "^17.0.5",
     "msw": "^2.14.6",
     "playwright": "^1.60.0",
