@@ -23,6 +23,9 @@ from ninja.errors import HttpError
 from ninja.files import UploadedFile
 from ninja.security import django_auth
 
+from banking.handlers.accounts import ACCOUNT_HANDLERS
+from banking.models import Account
+from banking.utils import upsert_transactions
 from schemas.transactions import (
     FileImportResult,
     PaginatedTransactionsSchema,
@@ -32,9 +35,7 @@ from schemas.transactions import (
     decode_cursor,
     encode_cursor,
 )
-from transactions.handlers.accounts import ACCOUNT_HANDLERS
-from transactions.models import Account, Label, Transaction
-from transactions.utils import upsert_transactions
+from transactions.models import Label, Transaction
 from users.models import Household
 
 logger = logging.getLogger(__name__)

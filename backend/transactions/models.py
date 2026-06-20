@@ -1,5 +1,7 @@
 """
 transactions/models.py — Label and Transaction models.
+
+Bank, AccountType, and Account have been moved to the banking app.
 """
 
 from django.db import models
