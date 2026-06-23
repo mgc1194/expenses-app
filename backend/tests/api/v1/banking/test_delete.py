@@ -1,13 +1,13 @@
 """
-tests/api/v1/accounts/test_delete.py — Tests for DELETE /accounts/{id}/.
+tests/api/v1/banking/test_delete.py — Tests for DELETE /accounts/{id}/.
 
 Root conftest provides: alice, seth, account, transaction.
-accounts/conftest.py provides: client.
+banking/conftest.py provides: client.
 """
 
 import pytest
 
-from transactions.models import Account
+from banking.models import Account  # was: from transactions.models import Account
 
 
 @pytest.mark.django_db

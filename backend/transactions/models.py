@@ -6,12 +6,6 @@ Bank, AccountType, and Account have been moved to the banking app.
 
 from django.db import models
 
-from banking.models import (  # noqa: F401  # noqa: F401 — re-exported for any existing imports
-    Account,
-    AccountType,
-    Bank,
-)
-from transactions.constants import HandlerKeys  # noqa: F401 — still used by handlers until Task 3
 from users.models import Household
 
 

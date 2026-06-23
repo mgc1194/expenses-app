@@ -7,7 +7,7 @@ Moved from transactions/models.py. Physical DB table names are unchanged
 
 from django.db import models
 
-from transactions.constants import HandlerKeys
+from banking.constants import HandlerKeys
 from users.models import Household
 
 

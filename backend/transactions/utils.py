@@ -8,7 +8,7 @@ imports, including:
 - inserting (upserting) transactions while preserving user-managed fields
 
 Account type detection relies on canonical handler keys defined in
-transactions.constants.HandlerKeys. These keys are system-defined,
+banking.constants.HandlerKeys. These keys are system-defined,
 seeded via data migrations, and resolved at runtime through the account
 handler registry.
 
@@ -22,7 +22,7 @@ import logging
 
 import pandas as pd
 
-from transactions.constants import HandlerKeys
+from banking.constants import HandlerKeys
 
 from .models import Account, Transaction
 

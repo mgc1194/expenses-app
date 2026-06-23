@@ -6,10 +6,11 @@ import pytest
 from django.db.models import ProtectedError
 from django.db.utils import IntegrityError
 
+from banking.constants import HandlerKeys
+from banking.handlers.accounts import ACCOUNT_HANDLERS
+from banking.models import Account, AccountType, Bank
 from tests.factories import AccountFactory, HouseholdFactory, LabelFactory, TransactionFactory
-from transactions.constants import HandlerKeys
-from transactions.handlers.accounts import ACCOUNT_HANDLERS
-from transactions.models import Account, AccountType, Bank, Label, Transaction
+from transactions.models import Label, Transaction
 
 # ── Module-local fixtures ─────────────────────────────────────────────────────
 # The shared conftest already provides: household, other_household, account_type,

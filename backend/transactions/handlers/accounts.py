@@ -6,7 +6,7 @@ system-supported account type and registers them in a central
 ACCOUNT_HANDLERS mapping.
 
 Handler keys are canonical, system-defined identifiers declared in
-transactions.constants.HandlerKeys and are seeded into the database via
+banking.constants.HandlerKeys and are seeded into the database via
 data migrations. Each AccountType record references one of these keys,
 which is then resolved at runtime to a concrete handler instance through
 this registry.
@@ -24,7 +24,7 @@ requires both a new handler implementation and a corresponding data
 migration.
 """
 
-from transactions.constants import HandlerKeys
+from banking.constants import HandlerKeys
 
 from .base import BaseHandler
 
