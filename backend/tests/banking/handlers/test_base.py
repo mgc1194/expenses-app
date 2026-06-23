@@ -1,5 +1,5 @@
 """
-tests/unit/handlers/test_base.py — Unit tests for BaseHandler.
+tests/banking/handlers/test_base.py — Unit tests for BaseHandler.
 """
 
 import json
@@ -8,7 +8,7 @@ from io import StringIO
 import pandas as pd
 import pytest
 
-from transactions.handlers.base import BaseHandler
+from banking.handlers.base import BaseHandler
 
 # ── Minimal concrete handlers for testing ─────────────────────────────────────
 
@@ -189,7 +189,7 @@ class TestErrorHandling:
         assert result is None
 
     def test_logs_error_for_missing_file(self, mocker):
-        mock_logger = mocker.patch('transactions.handlers.base.logger')
+        mock_logger = mocker.patch('banking.handlers.base.logger')
         SimpleHandler().process('nonexistent_file.csv')
         mock_logger.error.assert_called_once()
         assert 'nonexistent_file.csv' in mock_logger.error.call_args[0][0]
@@ -206,7 +206,7 @@ class TestErrorHandling:
 
     def test_logs_error_for_empty_data_error(self, mocker):
         mocker.patch('pandas.read_csv', side_effect=pd.errors.EmptyDataError)
-        mock_logger = mocker.patch('transactions.handlers.base.logger')
+        mock_logger = mocker.patch('banking.handlers.base.logger')
         SimpleHandler().process('fake_path.csv')
         mock_logger.error.assert_called_once_with('No data in file: fake_path.csv')
 
@@ -216,7 +216,7 @@ class TestErrorHandling:
 
     def test_logs_error_for_parser_error(self, mocker):
         mocker.patch('pandas.read_csv', side_effect=pd.errors.ParserError)
-        mock_logger = mocker.patch('transactions.handlers.base.logger')
+        mock_logger = mocker.patch('banking.handlers.base.logger')
         SimpleHandler().process('fake_path.csv')
         mock_logger.error.assert_called_once()
         assert 'fake_path.csv' in mock_logger.error.call_args[0][0]
@@ -227,7 +227,7 @@ class TestErrorHandling:
 
     def test_logs_error_for_unexpected_exception(self, mocker):
         mocker.patch('pandas.read_csv', side_effect=Exception('unexpected'))
-        mock_logger = mocker.patch('transactions.handlers.base.logger')
+        mock_logger = mocker.patch('banking.handlers.base.logger')
         SimpleHandler().process('fake_path.csv')
         mock_logger.error.assert_called_once()
         assert 'unexpected' in mock_logger.error.call_args[0][0]

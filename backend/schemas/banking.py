@@ -1,3 +1,10 @@
+"""
+backend/schemas/banking.py — API schemas for banking endpoints.
+
+Renamed from schemas/accounts.py as part of the banking app extraction.
+No schema changes.
+"""
+
 from datetime import datetime
 
 from ninja import Schema
