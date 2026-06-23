@@ -1,12 +1,25 @@
 """
 transactions/migrations/0008_account_fk_to_banking.py
 
-Updates Django's migration state so Transaction.account points to
-banking.Account instead of transactions.Account.
+Completes the move of Bank, AccountType, and Account out of the
+transactions app's migration state and into banking.
 
-SeparateDatabaseAndState is used: the physical foreign key column already
-points to the correct rows in the accounts table. No ALTER TABLE is
-needed — only Django's internal state needs updating.
+Two things happen here, both state-only (no ALTER/DROP/CREATE TABLE is
+issued against the database):
+
+1. Transaction.account is re-pointed to banking.Account.
+2. Bank, AccountType, and Account are removed from the transactions app's
+   migration state via DeleteModel. Without this step those three models
+   would exist in BOTH transactions' state (created in
+   transactions/migrations/0001_initial.py) and banking's state (created
+   in banking/migrations/0001_initial.py) simultaneously. A future
+   makemigrations run would then detect that transactions "has" models
+   with no corresponding code and propose deleting them — which, if not
+   caught and made state-only, would emit a real DROP TABLE against
+   banks/account_types/accounts. The DeleteModel operations below close
+   that gap by removing the duplicate state from transactions; the
+   physical tables are untouched and already claimed under the banking
+   app label by banking/migrations/0001_initial.py.
 """
 
 import django.db.models.deletion
@@ -32,6 +45,11 @@ class Migration(migrations.Migration):
                         to='banking.account',
                     ),
                 ),
+                # Remove banking-domain models from the transactions app state;
+                # the underlying tables remain and are claimed by banking/0001_initial.
+                migrations.DeleteModel(name='Account'),
+                migrations.DeleteModel(name='AccountType'),
+                migrations.DeleteModel(name='Bank'),
             ],
         ),
     ]

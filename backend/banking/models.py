@@ -14,7 +14,7 @@ from users.models import Household
 class Bank(models.Model):
     """
     Represents a financial institution.
-    Suported banks are sytem determined. Adding, edditing or removing
+    Supported banks are system determined. Adding, editing or removing
     institutions should be performed through migrations.
     """
 

@@ -1,5 +1,5 @@
 """
-schemas/banking.py — API schemas for banking endpoints.
+backend/schemas/banking.py — API schemas for banking endpoints.
 
 Renamed from schemas/accounts.py as part of the banking app extraction.
 No schema changes.
