@@ -1,5 +1,5 @@
 """
-tests/transactions/handlers/test_accounts.py — Unit tests for each account handler.
+tests/banking/handlers/test_accounts.py — Unit tests for each account handler.
 """
 
 from io import StringIO
@@ -7,7 +7,7 @@ from io import StringIO
 import pandas as pd
 import pytest
 
-from transactions.handlers.accounts import (
+from banking.handlers.accounts import (
     AmexHandler,
     CapitalOneCheckingHandler,
     CapitalOneQuicksilverHandler,
