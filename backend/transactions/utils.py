@@ -1,63 +1,29 @@
 """
-transactions/utils.py — Transaction import utilities and domain-level business logic.
+backend/transactions/utils.py — Transaction persistence utilities.
 
-This module contains non-model business logic used during transaction
-imports, including:
+This module contains non-model business logic for creating Transaction
+rows during import. It is the transactions app's responsibility because
+the function only creates and queries Transaction objects — Account is
+accepted purely as a parameter identifying which account the rows belong
+to (banking.Account is referenced via a normal cross-app import, the same
+way Transaction.account already FKs into banking).
 
-- inferring an account type from uploaded CSV filenames
-- inserting (upserting) transactions while preserving user-managed fields
+Account-detection logic (mapping a filename to a handler_key) remains in
+banking/utils.py — that is a banking concern, not a transaction concern.
 
-Account type detection relies on canonical handler keys defined in
-banking.constants.HandlerKeys. These keys are system-defined,
-seeded via data migrations, and resolved at runtime through the account
-handler registry.
-
-This module intentionally does not contain parsing logic or persistence
-rules beyond transaction insertion; CSV parsing and normalization are
-handled by account handlers, while referential integrity is enforced at
-the model layer.
+This module intentionally does not contain CSV parsing or normalization
+logic; that is handled by account handlers in banking.handlers, while
+referential integrity is enforced at the model layer.
 """
 
 import logging
 
 import pandas as pd
 
-from banking.constants import HandlerKeys
-
-from .models import Account, Transaction
+from banking.models import Account
+from transactions.models import Transaction
 
 logger = logging.getLogger(__name__)
-
-
-# ── Account detection ─────────────────────────────────────────────────────────
-
-# Maps filename substrings to handler_key values in ACCOUNT_HANDLERS.
-# Order matters — more specific patterns should come first.
-FILE_DETECTION_MAP = {
-    '360Checking': HandlerKeys.CO_CHECKING,
-    '360PerformanceSavings': HandlerKeys.CO_SAVINGS,
-    'transaction_download': HandlerKeys.CO_QUICKSILVER,
-    'SOFI-Checking': HandlerKeys.SOFI_CHECKING,
-    'SOFI-Savings': HandlerKeys.SOFI_SAVINGS,
-    'WF-Checking': HandlerKeys.WF_CHECKING,
-    'WF-Savings': HandlerKeys.WF_SAVINGS,
-    'activity': HandlerKeys.AMEX_DELTA,
-    'Chase': HandlerKeys.CHASE,
-    'Discover': HandlerKeys.DISCOVER,
-}
-
-
-def detect_account_type(filename: str) -> str | None:
-    """
-    Attempt to detect the account type from a CSV filename.
-
-    Returns the handler_key string if detected, or None if unrecognized.
-    The result is always shown to the user for confirmation before import.
-    """
-    for substring, handler_key in FILE_DETECTION_MAP.items():
-        if substring in filename:
-            return handler_key
-    return None
 
 
 # ── Transaction upsert ────────────────────────────────────────────────────────

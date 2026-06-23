@@ -73,7 +73,7 @@ class AccountType(models.Model):
 
     def get_handler(self):
         """Returns the handler associated with the selected account type."""
-        from transactions.handlers.accounts import ACCOUNT_HANDLERS
+        from banking.handlers.accounts import ACCOUNT_HANDLERS
 
         return ACCOUNT_HANDLERS[self.handler_key]
 

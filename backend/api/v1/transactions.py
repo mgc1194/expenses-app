@@ -25,7 +25,6 @@ from ninja.security import django_auth
 
 from banking.handlers.accounts import ACCOUNT_HANDLERS
 from banking.models import Account
-from banking.utils import upsert_transactions
 from schemas.transactions import (
     FileImportResult,
     PaginatedTransactionsSchema,
@@ -36,6 +35,7 @@ from schemas.transactions import (
     encode_cursor,
 )
 from transactions.models import Label, Transaction
+from transactions.utils import upsert_transactions
 from users.models import Household
 
 logger = logging.getLogger(__name__)
