@@ -1,7 +1,15 @@
 """
 transactions/models.py — Label and Transaction models.
 
-Bank, AccountType, and Account have been moved to the banking app.
+This app owns everything that creates, queries, or mutates a Transaction
+row, including labeling, categorization, and (in transactions/utils.py)
+the import-time upsert logic.
+
+Bank, AccountType, Account, and all CSV-parsing handler logic live in the
+banking app — that app owns accounts, banks, account types, and the
+handler registry used to normalize each bank's export format. Transaction
+references banking.Account via FK; this is the only cross-app dependency
+transactions has on banking.
 """
 
 from django.db import models
