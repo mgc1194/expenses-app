@@ -1,8 +1,8 @@
 """
-tests/api/v1/accounts/test_post.py — Tests for POST /accounts/.
+tests/api/v1/banking/test_post.py — Tests for POST /accounts/.
 
 Root conftest provides: alice, seth, household, other_household, account_type, account.
-accounts/conftest.py provides: client.
+banking/conftest.py provides: client.
 """
 
 import pytest

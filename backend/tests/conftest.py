@@ -18,6 +18,7 @@ Fixture relationships
 
 import pytest
 
+from banking.constants import HandlerKeys
 from tests.factories import (
     AccountFactory,
     AccountTypeFactory,
@@ -27,7 +28,6 @@ from tests.factories import (
     TransactionFactory,
     UserFactory,
 )
-from transactions.constants import HandlerKeys
 
 # ── Households ────────────────────────────────────────────────────────────────
 

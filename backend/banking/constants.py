@@ -1,5 +1,5 @@
 """
-transactions/constants.py — System-defined constants for the transactions domain.
+banking/constants.py — System-defined constants for the transactions domain.
 """
 
 

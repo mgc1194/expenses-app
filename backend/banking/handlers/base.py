@@ -1,5 +1,5 @@
 """
-transactions/handlers/base.py — Base class for all account transaction handlers.
+banking/handlers/base.py — Base class for all account transaction handlers.
 
 To add a new account handler, subclass BaseHandler and declare the
 class-level attributes. Override `_apply_amount_logic` only if the
@@ -8,7 +8,7 @@ account needs custom amount calculation before the DataFrame is built
 
 Example — minimal subclass:
 
-    from transactions.handlers.base import BaseHandler
+    from banking.handlers.base import BaseHandler
 
     class SoFiSavingsHandler(BaseHandler):
         account     = 'SoFi Savings'
@@ -85,13 +85,13 @@ class BaseHandler:
     encoding: str = 'latin1'  # CSV file encoding
     negate_amount: bool = False  # Set True if the bank inverts sign (e.g. Amex, Discover)
     csv_names: list = None  # Column names to assign (for headerless CSVs e.g. Wells Fargo)
-    csv_header: int | None = 0  # Row number of header; None for headerless CSVs
+    csv_header: int | None = 0  # Row index to use as header; None for headerless CSVs
 
-    # ── Public entry point ─────────────────────────────────────────────────
+    # ── Public entry point ───────────────────────────────────────────────────
 
     def process(self, file_path: str | io.BytesIO) -> pd.DataFrame | None:
-        """
-        Parse, clean, and return a normalized DataFrame for this account.
+        """Parse, clean, and return a normalized DataFrame for this account.
+
         Returns None and logs the error if anything goes wrong.
         """
         try:
@@ -109,7 +109,7 @@ class BaseHandler:
             logger.error(f'Unexpected error processing {file_path}: {e}')
         return None
 
-    # ── Internal ───────────────────────────────────────────────────────────
+    # ── Internal ──────────────────────────────────────────────────────────────
 
     def _read_and_process(self, file_path: str) -> pd.DataFrame:
         raw_df = pd.read_csv(
@@ -119,7 +119,6 @@ class BaseHandler:
             header=self.csv_header,
         )
 
-        # Hook for subclasses that need custom amount derivation
         raw_df = self._apply_amount_logic(raw_df)
 
         amount = -raw_df[self.col_amount] if self.negate_amount else raw_df[self.col_amount]
@@ -142,17 +141,16 @@ class BaseHandler:
 
     @staticmethod
     def _apply_amount_logic(df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Override in subclasses that derive the amount column from multiple
-        source columns before the clean DataFrame is built.
-        The default implementation is a no-op.
-        """
+        """Override in subclasses that derive the amount column from multiple
+        source columns. The default implementation is a no-op."""
         return df
 
     @staticmethod
     def _generate_dedupe_hash(row: pd.Series) -> str:
-        """SHA-256 hash of all raw CSV columns — intentionally uses raw data
-        so that fields like 'current balance' or 'transaction id' disambiguate otherwise
-        identical rows (e.g. two transactions with the same date and amount)."""
+        """SHA-256 hash of all raw CSV columns.
+
+        Intentionally uses raw data so that fields like 'current balance' or
+        'transaction id' disambiguate otherwise identical rows.
+        """
         unique_string = '_'.join(str(v) for v in row)
         return hashlib.sha256(unique_string.encode()).hexdigest()

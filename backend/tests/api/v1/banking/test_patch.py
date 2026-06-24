@@ -1,8 +1,8 @@
 """
-tests/api/v1/accounts/test_patch.py — Tests for PATCH /accounts/{id}/.
+tests/api/v1/banking/test_patch.py — Tests for PATCH /accounts/{id}/.
 
 Root conftest provides: alice, seth, account.
-accounts/conftest.py provides: client.
+banking/conftest.py provides: client.
 """
 
 import pytest

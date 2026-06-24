@@ -1,9 +1,9 @@
 """
-tests/api/v1/accounts/test_get.py — Tests for GET /accounts/.
+tests/api/v1/banking/test_get.py — Tests for GET /accounts/.
 
 Root conftest provides: alice, seth, household, other_household,
 account_type, account.
-accounts/conftest.py provides: client, second_household.
+banking/conftest.py provides: client, second_household.
 """
 
 import pytest
