@@ -13,5 +13,4 @@ class CategoryFactory(factory.django.DjangoModelFactory):
 
     name = factory.Sequence(lambda n: f'Category {n}')
     type = Category.Type.SPENDING
-    is_active = True
     household = factory.SubFactory('tests.factories.HouseholdFactory')

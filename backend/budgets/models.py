@@ -59,7 +59,7 @@ class Category(models.Model):
 
     class Meta:
         db_table = 'categories'
-        unique_together = ('household', 'name', 'type')
+        unique_together = [['household', 'name', 'type']]
         ordering = ['type', 'name']
 
     def __str__(self):
