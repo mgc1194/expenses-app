@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     # Local
     'users',
     'banking',
+    'budgets',
     'transactions',
 ]
 
