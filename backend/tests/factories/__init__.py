@@ -6,6 +6,7 @@ Usage in tests:
 """
 
 from .banking import AccountFactory, AccountTypeFactory, BankFactory
+from .budgets import CategoryFactory
 from .transactions import LabelFactory, TransactionFactory
 from .users import HouseholdFactory, UserFactory
 
@@ -13,6 +14,7 @@ __all__ = [
     'AccountFactory',
     'AccountTypeFactory',
     'BankFactory',
+    'CategoryFactory',
     'HouseholdFactory',
     'LabelFactory',
     'TransactionFactory',
