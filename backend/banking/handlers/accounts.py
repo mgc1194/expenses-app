@@ -145,21 +145,17 @@ class DiscoverHandler(BaseHandler):
 class WellsFargoCheckingHandler(BaseHandler):
     account = 'WF Checking'
     date_format = '%m/%d/%Y'
-    col_date = 'Date'
-    col_concept = 'Description'
-    col_amount = 'Amount'
-    csv_names = ['Date', 'Amount', '*', '_', 'Description']
-    csv_header = None
+    col_date = 'DATE'
+    col_concept = 'DESCRIPTION'
+    col_amount = 'AMOUNT'
 
 
 class WellsFargoSavingsHandler(BaseHandler):
     account = 'WF Savings'
     date_format = '%m/%d/%Y'
-    col_date = 'Date'
-    col_concept = 'Description'
-    col_amount = 'Amount'
-    csv_names = ['Date', 'Amount', '*', '_', 'Description']
-    csv_header = None
+    col_date = 'DATE'
+    col_concept = 'DESCRIPTION'
+    col_amount = 'AMOUNT'
 
 
 # ── Registry ──────────────────────────────────────────────────────────────────
