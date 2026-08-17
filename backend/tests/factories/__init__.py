@@ -5,19 +5,16 @@ Usage in tests:
     from tests.factories import HouseholdFactory, UserFactory, TransactionFactory, ...
 """
 
-from .transactions import (
-    AccountFactory,
-    AccountTypeFactory,
-    BankFactory,
-    LabelFactory,
-    TransactionFactory,
-)
+from .banking import AccountFactory, AccountTypeFactory, BankFactory
+from .budgets import CategoryFactory
+from .transactions import LabelFactory, TransactionFactory
 from .users import HouseholdFactory, UserFactory
 
 __all__ = [
     'AccountFactory',
     'AccountTypeFactory',
     'BankFactory',
+    'CategoryFactory',
     'HouseholdFactory',
     'LabelFactory',
     'TransactionFactory',

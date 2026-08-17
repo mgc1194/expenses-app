@@ -51,6 +51,8 @@ INSTALLED_APPS = [
     'ninja',
     # Local
     'users',
+    'banking',
+    'budgets',
     'transactions',
 ]
 

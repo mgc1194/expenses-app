@@ -1,5 +1,5 @@
 """
-tests/unit/handlers/test_accounts.py — Unit tests for each account handler.
+tests/banking/handlers/test_accounts.py — Unit tests for each account handler.
 """
 
 from io import StringIO
@@ -7,7 +7,7 @@ from io import StringIO
 import pandas as pd
 import pytest
 
-from transactions.handlers.accounts import (
+from banking.handlers.accounts import (
     AmexHandler,
     CapitalOneCheckingHandler,
     CapitalOneQuicksilverHandler,
@@ -276,14 +276,11 @@ class TestDiscoverHandler:
 
 
 class TestWellsFargoCheckingHandler:
-    CSV = '02/15/2026,-45.50,*,_,GROCERY STORE\n'
+    CSV = 'DATE,DESCRIPTION,AMOUNT,CHECK #,STATUS\n02/15/2026,GROCERY STORE,-45.50,,Posted\n'
 
     @pytest.fixture
     def subject(self, mocker):
-        raw_df = pd.read_csv(
-            StringIO(self.CSV), names=['Date', 'Amount', '*', '_', 'Description'], header=None
-        )
-        mocker.patch('pandas.read_csv', return_value=raw_df)
+        mocker.patch('pandas.read_csv', return_value=pd.read_csv(StringIO(self.CSV)))
         return WellsFargoCheckingHandler().process('fake.csv')
 
     def test_returns_a_dataframe(self, subject):
@@ -306,14 +303,11 @@ class TestWellsFargoCheckingHandler:
 
 
 class TestWellsFargoSavingsHandler:
-    CSV = '02/15/2026,500.00,*,_,TRANSFER IN\n'
+    CSV = 'DATE,DESCRIPTION,AMOUNT,CHECK #,STATUS\n02/15/2026,TRANSFER IN,500,,Posted\n'
 
     @pytest.fixture
     def subject(self, mocker):
-        raw_df = pd.read_csv(
-            StringIO(self.CSV), names=['Date', 'Amount', '*', '_', 'Description'], header=None
-        )
-        mocker.patch('pandas.read_csv', return_value=raw_df)
+        mocker.patch('pandas.read_csv', return_value=pd.read_csv(StringIO(self.CSV)))
         return WellsFargoSavingsHandler().process('fake.csv')
 
     def test_returns_a_dataframe(self, subject):

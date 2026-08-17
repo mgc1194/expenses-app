@@ -1,5 +1,8 @@
 """
-api/v1/accounts.py — Account management endpoints.
+api/v1/banking.py — Account management endpoints.
+
+Renamed from api/v1/accounts.py as part of the banking app extraction.
+Endpoint paths and behaviour are unchanged.
 
 Endpoints:
     GET    /api/v1/accounts/         — list accounts across the user's households
@@ -18,13 +21,13 @@ from ninja import Router
 from ninja.errors import HttpError
 from ninja.security import django_auth
 
-from schemas.accounts import (
+from banking.models import Account, AccountType, Bank
+from schemas.banking import (
     AccountCreateRequest,
     AccountDetailSchema,
     AccountRenameRequest,
     BankSchema,
 )
-from transactions.models import Account, AccountType, Bank
 from users.models import Household
 
 logger = logging.getLogger(__name__)

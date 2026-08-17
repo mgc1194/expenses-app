@@ -1,12 +1,12 @@
 """
-transactions/handlers/accounts.py —Account handler registry.
+banking/handlers/accounts.py — Account handler registry.
 
 This module defines concrete account handler implementations for each
 system-supported account type and registers them in a central
 ACCOUNT_HANDLERS mapping.
 
 Handler keys are canonical, system-defined identifiers declared in
-transactions.constants.HandlerKeys and are seeded into the database via
+banking.constants.HandlerKeys and are seeded into the database via
 data migrations. Each AccountType record references one of these keys,
 which is then resolved at runtime to a concrete handler instance through
 this registry.
@@ -24,7 +24,7 @@ requires both a new handler implementation and a corresponding data
 migration.
 """
 
-from transactions.constants import HandlerKeys
+from banking.constants import HandlerKeys
 
 from .base import BaseHandler
 
@@ -145,21 +145,17 @@ class DiscoverHandler(BaseHandler):
 class WellsFargoCheckingHandler(BaseHandler):
     account = 'WF Checking'
     date_format = '%m/%d/%Y'
-    col_date = 'Date'
-    col_concept = 'Description'
-    col_amount = 'Amount'
-    csv_names = ['Date', 'Amount', '*', '_', 'Description']
-    csv_header = None
+    col_date = 'DATE'
+    col_concept = 'DESCRIPTION'
+    col_amount = 'AMOUNT'
 
 
 class WellsFargoSavingsHandler(BaseHandler):
     account = 'WF Savings'
     date_format = '%m/%d/%Y'
-    col_date = 'Date'
-    col_concept = 'Description'
-    col_amount = 'Amount'
-    csv_names = ['Date', 'Amount', '*', '_', 'Description']
-    csv_header = None
+    col_date = 'DATE'
+    col_concept = 'DESCRIPTION'
+    col_amount = 'AMOUNT'
 
 
 # ── Registry ──────────────────────────────────────────────────────────────────
