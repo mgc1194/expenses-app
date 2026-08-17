@@ -9,20 +9,6 @@ jobs:
     name: Backend Tests
     runs-on: ubuntu-latest
 
-    services:
-      mysql:
-        image: mysql:8.4
-        env:
-          MYSQL_ALLOW_EMPTY_PASSWORD: yes
-          MYSQL_DATABASE: serve
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=10
-
     steps:
       - uses: actions/checkout@v7
 
@@ -37,6 +23,14 @@ jobs:
       - name: Lint
         working-directory: backend
         run: ruff check .
+
+      - name: Start MySQL
+        run: sudo /etc/init.d/mysql start
+
+      - name: Set up database
+        run: |
+          echo "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '';" | sudo mysql -uroot -proot
+          mysql -uroot -e "CREATE DATABASE IF NOT EXISTS serve;"
 
       - name: Run tests
         working-directory: backend
