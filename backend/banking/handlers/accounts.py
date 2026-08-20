@@ -145,21 +145,35 @@ class DiscoverHandler(BaseHandler):
 class WellsFargoCheckingHandler(BaseHandler):
     account = 'WF Checking'
     date_format = '%m/%d/%Y'
-    col_date = 'Date'
-    col_concept = 'Description'
-    col_amount = 'Amount'
-    csv_names = ['Date', 'Amount', '*', '_', 'Description']
-    csv_header = None
+    col_date = 'DATE'
+    col_concept = 'DESCRIPTION'
+    col_amount = 'AMOUNT'
 
 
 class WellsFargoSavingsHandler(BaseHandler):
     account = 'WF Savings'
     date_format = '%m/%d/%Y'
+    col_date = 'DATE'
+    col_concept = 'DESCRIPTION'
+    col_amount = 'AMOUNT'
+
+
+# ── Citi ──────────────────────────────────────────────────────────────────────
+
+
+class CitiCostcoHandler(BaseHandler):
+    account = 'Costco Visa'
+    date_format = '%m/%d/%Y'
     col_date = 'Date'
     col_concept = 'Description'
-    col_amount = 'Amount'
-    csv_names = ['Date', 'Amount', '*', '_', 'Description']
-    csv_header = None
+    col_amount = 'Amount'  # Derived in _apply_amount_logic
+    negate_amount = True
+
+    @staticmethod
+    def _apply_amount_logic(df):
+        df = df.fillna(0)
+        df['Amount'] = df['Debit'] + df['Credit']
+        return df
 
 
 # ── Registry ──────────────────────────────────────────────────────────────────
@@ -177,4 +191,5 @@ ACCOUNT_HANDLERS = {
     HandlerKeys.DISCOVER: DiscoverHandler(),
     HandlerKeys.WF_CHECKING: WellsFargoCheckingHandler(),
     HandlerKeys.WF_SAVINGS: WellsFargoSavingsHandler(),
+    HandlerKeys.CITI_COSTCO: CitiCostcoHandler(),
 }
