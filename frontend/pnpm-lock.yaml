@@ -103,8 +103,8 @@ importers:
         specifier: ^17.7.0
         version: 17.7.0
       happy-dom:
-        specifier: ^20.11.1
-        version: 20.11.1
+        specifier: ^20.11.2
+        version: 20.11.2
       lint-staged:
         specifier: ^17.3.0
         version: 17.3.0
@@ -128,7 +128,7 @@ importers:
         version: 6.4.1(@types/node@26.1.2)(yaml@2.9.0)
       vitest:
         specifier: ^3.0.0
-        version: 3.2.4(@types/node@26.1.2)(@vitest/browser@3.2.4)(happy-dom@20.11.1)(jsdom@29.0.0)(msw@2.15.0(@types/node@26.1.2)(typescript@6.0.3))(yaml@2.9.0)
+        version: 3.2.4(@types/node@26.1.2)(@vitest/browser@3.2.4)(happy-dom@20.11.2)(jsdom@29.0.0)(msw@2.15.0(@types/node@26.1.2)(typescript@6.0.3))(yaml@2.9.0)
 
 packages:
 
@@ -2617,8 +2617,8 @@ packages:
     resolution: {integrity: sha512-Chq1s4CY7jmh8gO2qvLIJyfCDIN+EHLFW/9iShnp1z8FjBQMoodWP1kDC36VAMXXIvAjj4ARa7ntfAV2BrjsbA==}
     engines: {node: ^12.22.0 || ^14.16.0 || ^16.0.0 || >=17.0.0}
 
-  happy-dom@20.11.1:
-    resolution: {integrity: sha512-XSt8tMzbW9ymE7687xztkO1ckR7qJNQ3LywY9vlYGhGi3zXrGBHuUo2Cl1ztZaICW+1eAGdkLbj6iwVqDT33kg==}
+  happy-dom@20.11.2:
+    resolution: {integrity: sha512-7MB+bJLkxu3SowAfBJbjW+c55kNz5tkR45gu2qzrxznezhLeN5YIlJbwUgSzlGc+qWoZ8Ykg71H5ezz69xixrw==}
     engines: {node: '>=20.0.0'}
 
   has-bigints@1.1.0:
@@ -5365,7 +5365,7 @@ snapshots:
       magic-string: 0.30.21
       sirv: 3.0.2
       tinyrainbow: 2.0.0
-      vitest: 3.2.4(@types/node@26.1.2)(@vitest/browser@3.2.4)(happy-dom@20.11.1)(jsdom@29.0.0)(msw@2.15.0(@types/node@26.1.2)(typescript@6.0.3))(yaml@2.9.0)
+      vitest: 3.2.4(@types/node@26.1.2)(@vitest/browser@3.2.4)(happy-dom@20.11.2)(jsdom@29.0.0)(msw@2.15.0(@types/node@26.1.2)(typescript@6.0.3))(yaml@2.9.0)
       ws: 8.19.0
     optionalDependencies:
       playwright: 1.61.1
@@ -5390,7 +5390,7 @@ snapshots:
       std-env: 3.10.0
       test-exclude: 7.0.2
       tinyrainbow: 2.0.0
-      vitest: 3.2.4(@types/node@26.1.2)(@vitest/browser@3.2.4)(happy-dom@20.11.1)(jsdom@29.0.0)(msw@2.15.0(@types/node@26.1.2)(typescript@6.0.3))(yaml@2.9.0)
+      vitest: 3.2.4(@types/node@26.1.2)(@vitest/browser@3.2.4)(happy-dom@20.11.2)(jsdom@29.0.0)(msw@2.15.0(@types/node@26.1.2)(typescript@6.0.3))(yaml@2.9.0)
     optionalDependencies:
       '@vitest/browser': 3.2.4(msw@2.15.0(@types/node@26.1.2)(typescript@6.0.3))(playwright@1.61.1)(vite@6.4.1(@types/node@26.1.2)(yaml@2.9.0))(vitest@3.2.4)
     transitivePeerDependencies:
@@ -6343,7 +6343,7 @@ snapshots:
 
   graphql@16.14.2: {}
 
-  happy-dom@20.11.1:
+  happy-dom@20.11.2:
     dependencies:
       '@types/node': 26.1.2
       '@types/whatwg-mimetype': 3.0.2
@@ -7611,7 +7611,7 @@ snapshots:
       fsevents: 2.3.3
       yaml: 2.9.0
 
-  vitest@3.2.4(@types/node@26.1.2)(@vitest/browser@3.2.4)(happy-dom@20.11.1)(jsdom@29.0.0)(msw@2.15.0(@types/node@26.1.2)(typescript@6.0.3))(yaml@2.9.0):
+  vitest@3.2.4(@types/node@26.1.2)(@vitest/browser@3.2.4)(happy-dom@20.11.2)(jsdom@29.0.0)(msw@2.15.0(@types/node@26.1.2)(typescript@6.0.3))(yaml@2.9.0):
     dependencies:
       '@types/chai': 5.2.3
       '@vitest/expect': 3.2.4
@@ -7639,7 +7639,7 @@ snapshots:
     optionalDependencies:
       '@types/node': 26.1.2
       '@vitest/browser': 3.2.4(msw@2.15.0(@types/node@26.1.2)(typescript@6.0.3))(playwright@1.61.1)(vite@6.4.1(@types/node@26.1.2)(yaml@2.9.0))(vitest@3.2.4)
-      happy-dom: 20.11.1
+      happy-dom: 20.11.2
       jsdom: 29.0.0
     transitivePeerDependencies:
       - jiti
